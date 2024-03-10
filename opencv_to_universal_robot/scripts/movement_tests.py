@@ -34,22 +34,22 @@ CARTESIAN_TRAJECTORY_CONTROLLERS = [
 class TrajectoryClient:
 
     def __init__(self):
-        rospy.init_node("UR_movement")
+        rospy.init_node("movement_tests")
 
         timeout = rospy.Duration(5)
         self.switch_srv = rospy.ServiceProxy("controller_manager/switch_controller", SwitchController)
         self.load_srv = rospy.ServiceProxy("controller_manager/load_controller", LoadController)
-        self.list_srv = rospy.ServiceProxy("controller_manager/list_controller", ListControllers)
+        self.list_srv = rospy.ServiceProxy("controller_manager/list_controllers", ListControllers)
         try:
             self.switch_srv.wait_for_service(timeout.to_sec())
         except rospy.exceptions.ROSException as err:
             rospy.logerr("Could not reach controller switch service. Msg {}".format(err))
             sys.exit(-1)
 
-        self.cartesian_trajectory_controller = CARTESIAN_TRAJECTORY_CONTROLLERS[0]
+        self.cartesian_trajectory_controller = CARTESIAN_TRAJECTORY_CONTROLLERS[1]
 
     def send_cartesian_trajectory(self):
-        self.load_srv(self.cartesian_trajectory_controller)
+        self.switch_controller(self.cartesian_trajectory_controller)
 
         goal = FollowCartesianTrajectoryGoal()
         trajectory_client = actionlib.SimpleActionClient(
@@ -81,7 +81,7 @@ class TrajectoryClient:
             point.time_from_start = rospy.Duration(duration_list[i])
             goal.trajectory.points.append(point)
 
-        self.ask_confirmation(pose_list)
+        # self.ask_confirmation(pose_list)
         rospy.loginfo("Executing trajectory using the {}".format(self.cartesian_trajectory_controller))
         trajectory_client.send_goal(goal)
         trajectory_client.wait_for_result()
@@ -107,6 +107,8 @@ class TrajectoryClient:
             sys.exit(0)
 
     def switch_controller(self, target_controller):
+        other_controllers = (CARTESIAN_TRAJECTORY_CONTROLLERS)
+
         srv = ListControllersRequest()
         response = self.list_srv(srv)
         for controller in response.controller:
@@ -118,6 +120,7 @@ class TrajectoryClient:
         self.load_srv(srv)
 
         srv = SwitchControllerRequest()
+        srv.stop_controllers = other_controllers
         srv.start_controllers = [target_controller]
         srv.strictness = SwitchControllerRequest.BEST_EFFORT
         self.switch_srv(srv)
