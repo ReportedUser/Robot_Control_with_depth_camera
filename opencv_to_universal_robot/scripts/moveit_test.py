@@ -54,22 +54,39 @@ class RobotClass:
         self.upright_constraints.joint_constraints.append(joint_constraints)
 
     @staticmethod
-    def box_limits(x, y, z):
-        max_x = "0.3"
-        max_y = "0.4"
-        max_z = "0.4"
+    def box_limits(check_x, check_y, check_z):
+        max_x= 0.3
+        max_y = 0.4
+        max_z = 0.4
 
-        min_x = "-0.3"
-        min_y = "0.15"
-        min_z = "0.1"
+        min_x = -0.3
+        min_y = 0.15
+        min_z = 0.1
 
-    def move_to_position(self):
+        if check_x > max_x:
+            check_x = max_x
+        if check_x < min_x:
+            check_x = min_x
+        if check_y > max_y:
+            check_y = max_y
+        if check_y < min_y:
+            check_y = min_y
+        if check_z > max_z:
+            check_z = max_z
+        if check_z < min_z:
+            check_z = min_z
+
+        return check_x, check_y, check_z
+
+    def move_to_position(self, x, y, z):
+
+        x, y, z = self.box_limits(x, y, z)
 
         pose_target = geometry_msgs.msg.Pose()
         pose_target.orientation.w = 1.0
-        pose_target.position.x = 0.3
-        pose_target.position.y = 0.4
-        pose_target.position.z = 0.1
+        pose_target.position.x = x
+        pose_target.position.y = y
+        pose_target.position.z = z
         self.group.set_pose_target(pose_target)
 
         plan = self.group.go(wait=True)
@@ -82,8 +99,18 @@ class RobotClass:
 
 
 def main():
-    ur3 = RobotClass()
-    ur3.move_to_position()
+    try:
+        ur3 = RobotClass()
+        while True:
+            print("choose x:")
+            choose_x = float(input())
+            print("choose y:")
+            choose_y = float(input())
+            print("choose z:")
+            choose_z = float(input())
+            ur3.move_to_position(choose_x, choose_y, choose_z)
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == '__main__':
