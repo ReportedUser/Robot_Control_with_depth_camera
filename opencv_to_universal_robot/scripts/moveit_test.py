@@ -53,10 +53,8 @@ class RobotClass:
         joint_constraints.joint_name = "wrist_1_joint"
         self.upright_constraints.joint_constraints.append(joint_constraints)
 
-
-
-    def box_limits(self):
-        pass
+    @staticmethod
+    def box_limits(x, y, z):
         max_x = "0.3"
         max_y = "0.4"
         max_z = "0.4"
