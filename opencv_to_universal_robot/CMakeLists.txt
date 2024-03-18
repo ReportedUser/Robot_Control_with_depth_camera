@@ -164,7 +164,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
  catkin_install_python(PROGRAMS
-   scripts/camera_publisher.py scripts/camera_subscriber.py
+   scripts/camera_publisher.py scripts/camera_subscriber.py scripts/movement_tests.py scripts/moveit_test.py scripts/hand_to_coordinates_mediapipe.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
