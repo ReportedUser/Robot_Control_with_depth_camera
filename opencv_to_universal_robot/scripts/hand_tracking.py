@@ -83,6 +83,9 @@ class RobotClass:
 
         x, y, z = self.box_limits(x, y, z)
 
+        print(x)
+        print(y)
+
         pose_target = geometry_msgs.msg.Pose()
         pose_target.orientation.w = 1.0
         pose_target.position.x = x
@@ -148,6 +151,7 @@ class HandDetection:
 
                 self.x = x
                 self.y = y
+                self.z = mfk_distance
 
                 i += 1
             hand_images = cv2.putText(hand_images, f"Hands: {number_of_hands}", org, font, fontScale, color, thickness,
@@ -207,6 +211,7 @@ print(f"Starting to capture images on SN: {device}")
 
 hand = HandDetection()
 ur3 = RobotClass()
+z=0
 
 while True:
     start_time = dt.datetime.today().timestamp()
@@ -224,8 +229,14 @@ while True:
     images = hand.hand_images
     x = (hand.x-320)*(0.6/560)
     y = hand.y*(0.25/206)
-    print(x)
-    print(y)
+    if 0.95 >= hand.z >= 0.65:
+        z = 0.1 + (hand.z - 0.65)
+
+    """
+    x_screen = ((z-0.1)/(0.4-0.1))*(560-468)+468
+    y_screen = ((z-0.1)/(0.4-0.1))*(206-129)+129
+    """
+
     ur3.move_to_position(x, y, 0.2)
 
     time_diff = dt.datetime.today().timestamp() - start_time
