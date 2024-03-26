@@ -20,3 +20,7 @@ This repository contains hand_tracking and some helper scripts:
 - Hand_tracking: Actual script used to track the hand and move the robot.
 - moveit_test: Helper script to check if the moveit and connection to the robot section of the program actually works.
 - hand_to_coordinates_mediapipe: Helper script to check if the mediapipe section of the program actually works.
+
+# Requirements
+
+This package requires ROS Noetic and [Universal Robot drivers](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/tree/master).
