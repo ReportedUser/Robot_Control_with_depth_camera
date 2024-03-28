@@ -62,3 +62,19 @@ $ git clone https://github.com/ReportedUser/opencv_to_universal_robot.git src/Un
 $ catkin_make
 
 ```
+
+Once this is done, you will have to give your robot some joint angle limits depending on your robot workspace so it doens't bump on to the surroundings.
+To do so, just go to:
+```
+$ rosed ur3_moveit_config joint_limits.yaml
+```
+This file contains limits for your robot, add your corresponding limits by typing at the end of each desired joint. An example would be:
+```
+shoulder_lift_joint:
+  has_velocity_limit: true
+  ...
+  max_acceleration: 0
+  has_position_limits: true
+  max_position: (max joint angle on radiants)
+  min_position: (min joint angle on radiants)
+```
