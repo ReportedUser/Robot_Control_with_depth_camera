@@ -12,7 +12,7 @@ In order to do so, the following components where used:
 
 ## Project
 
-The objective of this project was to follow the hand position with a robot.
+This project objective is to follow the hand position with a robot.
 In order to do so this package makes use of mediapipe to identify the hand and moveit for the communication with the robot.
 
 ## Contents
@@ -23,8 +23,8 @@ This repository contains hand_tracking and some helper scripts:
 
 ## Requirements
 
-This package is used on ROS Noetic and makes use of Universal Robot drivers.
-Install ROS Noteic and then follow [Universal Robot drivers](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/tree/master) installation guide.
+This package is used on ROS Noetic and makes use of Universal Robot drivers, you will also need to install some python libraries to make everything work.
+Install [ROS Noteic](http://wiki.ros.org/noetic/Installation/Ubuntu) and then follow [Universal Robot drivers](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/tree/master) installation guide.
 
 Create a RoS workspace by:
 ```
@@ -46,7 +46,7 @@ $ echo $ROS_PACKAGE_PATH
 ```
 
 
-Check that your ROS connection with the UR simulator is correct by using the tests presented on [UR Usage Example](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/usage_example.md). There you will also see an example of MoveIt being use which some part of it will be used in the setup, but don't worry right now!
+Check that your ROS connection with the UR simulator is correct by using the tests presented in [UR Usage Example](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/usage_example.md). There you will also see an example of [MoveIt](https://moveit.ros.org/) being use which some part of it will be used in the setup, but don't worry right now!
 
 Now that your workspace is created, is time to start the package installation.
 
@@ -63,13 +63,14 @@ $ catkin_make
 
 ```
 
-Once this is done, you will have to give your robot some joint angle limits depending on your robot workspace so it doens't bump on to the surroundings.
+Once this is done, you will have to give your robot some joint angle limits depending on your robot workspace so it doesn't bump on to the surroundings.
 To do so, just go to:
 ```
 $ rosed ur3_moveit_config joint_limits.yaml
 ```
 This file contains limits for your robot, add your corresponding limits by typing at the end of each desired joint. An example would be:
 ```
+  ... 
 shoulder_lift_joint:
   has_velocity_limit: true
   ...
@@ -77,4 +78,30 @@ shoulder_lift_joint:
   has_position_limits: true
   max_position: (max joint angle on radiants)
   min_position: (min joint angle on radiants)
+shoulder_pan_joint:
+  ...
 ```
+
+If you don't know your joint limits, just figure it out with the simulator and come back later.
+
+## Setting it up
+
+Now that the requirements are complete, we can start playing with it!
+
+First, on the simulator external control (can be found inside Installation -> URCaps) add your Host IP with custom port 50002 and your host name, then start the UR robot and load the [urcap](https://github.com/UniversalRobots/Universal_Robots_ExternalControl_URCap/releases).
+
+On ROS side you will need to start two launch files on different terminal windows.
+```
+$ roslaunch ur_robot_driver ur3_bringup.launch robot_ip:=your.robot.ip.adress
+```
+```
+$ roslaunch ur3_moveit_config moveit_planning_execution.launch
+```
+And then the script.
+```
+rosrun Universal_Robots_Depth_camera_control hand_tracking
+```
+
+If everything was done correctly, the robot should be following your every movement!
+
+*In case you are setting up your joint limits, you'll need to stop and relaunch ur3_moveit_config for the changes to be loaded.
