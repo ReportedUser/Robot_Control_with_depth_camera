@@ -19,6 +19,7 @@ class RobotClass:
         self.robot = moveit_commander.RobotCommander()
         # scene = moveit_commander.PlanningSceneInterface()
         self.group = moveit_commander.MoveGroupCommander("manipulator")
+        self.group.set_planning_time(5)
         # display_trajectory_publisher = rospy.Publisher("/scaled_pos_joint_traj_controller/follow_joint_trajectory", moveit_msgs.msg.DisplayTrajectory, queue_size=20)
         self.upright_constraints = Constraints()
         self.upright_constraints.name = "upright"
@@ -83,8 +84,9 @@ class RobotClass:
 
         x, y, z = self.box_limits(x, y, z)
 
-        print(x)
-        print(y)
+        print("x:",x)
+        print("y:",y)
+        print("z:", z)
 
         pose_target = geometry_msgs.msg.Pose()
         pose_target.orientation.w = 1.0
@@ -227,17 +229,20 @@ while True:
 
     hand.frame_processing(aligned_depth_frame, input_color_image)
     images = hand.hand_images
-    x = (hand.x-320)*(0.6/560)
-    y = hand.y*(0.25/206)
     if 0.95 >= hand.z >= 0.65:
         z = 0.1 + (hand.z - 0.65)
+    elif hand.z > 0.95:
+        z = 0.4
+    elif hand.z < 0.65:
+        z = 0.1
 
-    """
     x_screen = ((z-0.1)/(0.4-0.1))*(560-468)+468
     y_screen = ((z-0.1)/(0.4-0.1))*(206-129)+129
-    """
 
-    ur3.move_to_position(x, y, 0.2)
+    x = (hand.x-320)*(0.6/x_screen)
+    y = hand.y*(0.25/y_screen)
+
+    ur3.move_to_position(x, y, z)
 
     time_diff = dt.datetime.today().timestamp() - start_time
     fps = int(1 / time_diff)
