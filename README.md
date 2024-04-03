@@ -24,6 +24,9 @@ This repository contains hand_tracking and some helper scripts:
 ## Requirements
 
 This package is used on ROS Noetic and makes use of Universal Robot drivers, you will also need to install some python libraries to make everything work.
+
+Download [Ubuntu 20.04.6 LTS (Focal Fossa)](https://releases.ubuntu.com/focal/) to be able to install RoS Noetic.
+
 Install [ROS Noteic](http://wiki.ros.org/noetic/Installation/Ubuntu) and then follow [Universal Robot drivers](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/tree/master) installation guide.
 
 Create a RoS workspace by:
@@ -39,14 +42,14 @@ $ catkin_make
 $ source devel/setup.bash
 ```
 
-Now check if your workspace was corectly made by:
+Now check if your workspace was correctly made by:
 ```
 $ echo $ROS_PACKAGE_PATH
 /home/youruser/catkin_ws/src:/opt/ros/noetic/share
 ```
 
 
-Check that your ROS connection with the UR simulator is correct by using the tests presented in [UR Usage Example](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/usage_example.md). There you will also see an example of [MoveIt](https://moveit.ros.org/) being use which some part of it will be used in the setup, but don't worry right now!
+Check that your ROS connection with the [UR simulator](https://www.universal-robots.com/download/?filters[]=98759&query=) is correct by using the tests presented in [UR Usage Example](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/usage_example.md). There you will also see an example of [MoveIt](https://moveit.ros.org/), some parts of it will be used in the setup, but don't worry right now!
 
 Now that your workspace is created, is time to start the package installation.
 
@@ -82,7 +85,12 @@ shoulder_pan_joint:
   ...
 ```
 
-If you don't know your joint limits, just figure it out with the simulator and come back later.
+If you don't know your joint limits, you can figure them out once the program is running.
+
+To finish it up, some libraries are needed:
+mediapipe      0.10.9 
+pyrealsense2   2.54.2.5684 
+opencv-python  4.9.0.80 
 
 ## Setting it up
 
