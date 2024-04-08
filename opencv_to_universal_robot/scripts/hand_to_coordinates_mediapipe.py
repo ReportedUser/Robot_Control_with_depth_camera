@@ -1,3 +1,4 @@
+import pyrealsense2
 import pyrealsense2 as rs
 import mediapipe as mp
 import cv2
@@ -54,12 +55,16 @@ class HandDetection:
 
                 self.x = x
                 self.y = y
+                self.z = mfk_distance
 
                 i += 1
             hand_images = cv2.putText(hand_images, f"Hands: {number_of_hands}", org, font, fontScale, color, thickness,
                                  cv2.LINE_AA)
         else:
             hand_images = cv2.putText(hand_images, "No Hands", org, font, fontScale, color, thickness, cv2.LINE_AA)
+            self.x = 0
+            self.y = 0
+            self.z = 0.7
 
         self.hand_images = hand_images
 
@@ -75,6 +80,8 @@ device = realsense_ctx.devices[0].get_info(rs.camera_info.serial_number)
 pipeline = rs.pipeline()
 config = rs.config()
 background_removed_color = 153  # Grey
+
+intrinsics = rs.intrinsics()
 
 
 # ====== Enable Streams ======
@@ -92,6 +99,22 @@ stream_fps = 30
 config.enable_stream(rs.stream.depth, stream_res_x, stream_res_y, rs.format.z16, stream_fps)
 config.enable_stream(rs.stream.color, stream_res_x, stream_res_y, rs.format.bgr8, stream_fps)
 profile = pipeline.start(config)
+
+
+profile_stream = profile.get_stream(rs.stream.depth)
+print(profile_stream.as_video_stream_profile().get_intrinsics())
+
+
+intrinsics.width = 640
+intrinsics.height = 480
+intrinsics.ppx = 321.454
+intrinsics.ppy = 232.919
+intrinsics.fx = 388.656
+intrinsics.fy = 388.656
+intrinsics.model = pyrealsense2.distortion.brown_conrady
+intrinsics.coeffs = [0, 0, 0, 0, 0]
+
+f = 0.00188    # focal length of 1.88 mm, from https://www.mouser.com/pdfdocs/Intel_D400_Series_Datasheet.pdf
 
 align_to = rs.stream.color
 align = rs.align(align_to)
@@ -111,6 +134,8 @@ print(f"Starting to capture images on SN: {device}")
 
 hand = HandDetection()
 
+
+
 while True:
     start_time = dt.datetime.today().timestamp()
 
@@ -126,6 +151,19 @@ while True:
     hand.frame_processing(aligned_depth_frame, input_color_image)
     images = hand.hand_images
 
+    if 0.95 >= hand.z >= 0.65:
+        z = 0.1 + (hand.z - 0.65)
+    elif hand.z > 0.95:
+        z = 0.4
+    elif hand.z < 0.65:
+        z = 0.1
+
+    result = rs.rs2_deproject_pixel_to_point(intrinsics, [hand.x, hand.y], hand.z)
+
+    print(result)
+
+
+
     time_diff = dt.datetime.today().timestamp() - start_time
     fps = int(1 / time_diff)
     org3 = (20, org[1] + 60)
@@ -135,10 +173,10 @@ while True:
 
     # Display images
     cv2.namedWindow(name_of_window, cv2.WINDOW_AUTOSIZE)
-    cv2.rectangle(images, (40, 137), (600, 343), (0, 255, 0), 2)
+    cv2.rectangle(images, (145, 115), (502, 262), (0, 255, 0), 2)
     cv2.putText(images, f"65 cm from camera, highest point on the robot.", (20, 135), font, fontScale, color, thickness,
                 cv2.LINE_AA)
-    cv2.rectangle(images, (86, 175), (554, 305), (255, 0, 0), 2)
+    cv2.rectangle(images, (198, 153), (446, 253), (255, 0, 0), 2)
     cv2.imshow(name_of_window, images)
     key = cv2.waitKey(1)
     # Press esc or 'q' to close the image window
