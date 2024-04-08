@@ -7,7 +7,7 @@ import numpy as np
 import sys
 import rospy
 import moveit_commander
-from moveit_msgs.msg import Constraints, OrientationConstraint, JointConstraint
+from moveit_msgs.msg import Constraints, OrientationConstraint
 import geometry_msgs.msg
 
 class RobotClass:
@@ -25,7 +25,7 @@ class RobotClass:
         self.upright_constraints.name = "upright"
 
         self.robot_information()
-        self.robot_constrains()
+        # self.robot_constraints()
 
     def robot_information(self):
         # We can get the name of the reference frame for this robot:
@@ -45,15 +45,30 @@ class RobotClass:
         print(self.robot.get_current_state())
         print("")
 
-    def robot_constrains(self):
-        joint_constraints = JointConstraint()
-        joint_constraints.position = 0
-        joint_constraints.tolerance_above = 0
-        joint_constraints.tolerance_below = 3.14/4
-        joint_constraints.weight = 1
+    def robot_constraints(self):
+        constraint_pose = self.group.get_current_pose()
 
-        joint_constraints.joint_name = "wrist_1_joint"
-        self.upright_constraints.joint_constraints.append(joint_constraints)
+        orientation_constrains = OrientationConstraint()
+        orientation_constrains.header.frame_id = constraint_pose.header.frame_id
+        orientation_constrains.link_name = "wrist_2_link"
+
+        orientation_constrains.orientation.w = 1
+
+        orientation_constrains.orientation.x = 0.1
+        orientation_constrains.orientation.y = 0
+        orientation_constrains.orientation.z = 0
+
+
+        orientation_constrains.absolute_x_axis_tolerance = 0.3
+        orientation_constrains.absolute_y_axis_tolerance = 0.3
+        orientation_constrains.absolute_z_axis_tolerance = 0.1
+
+        orientation_constrains.weight = 1
+
+        self.upright_constraints.orientation_constraints = [orientation_constrains]
+        self.group.set_path_constraints(self.upright_constraints)
+
+
 
     @staticmethod
     def box_limits(check_x, check_y, check_z):
@@ -89,7 +104,7 @@ class RobotClass:
         print("z:", z)
 
         pose_target = geometry_msgs.msg.Pose()
-        pose_target.orientation.w = 1.0
+        pose_target.orientation.z = 1.0
         pose_target.position.x = x
         pose_target.position.y = y
         pose_target.position.z = z
@@ -165,6 +180,9 @@ class HandDetection:
 
 
 
+
+
+
 font = cv2.FONT_HERSHEY_SIMPLEX
 org = (10, 10)
 fontScale = .5
@@ -173,6 +191,7 @@ thickness = 1
 
 # ====== Realsense ======
 realsense_ctx = rs.context()
+intrinsics = rs.intrinsics()
 device = realsense_ctx.devices[0].get_info(rs.camera_info.serial_number)
 pipeline = rs.pipeline()
 config = rs.config()
@@ -195,6 +214,20 @@ config.enable_stream(rs.stream.depth, stream_res_x, stream_res_y, rs.format.z16,
 config.enable_stream(rs.stream.color, stream_res_x, stream_res_y, rs.format.bgr8, stream_fps)
 profile = pipeline.start(config)
 
+
+profile_stream = profile.get_stream(rs.stream.depth)
+print(profile_stream.as_video_stream_profile().get_intrinsics())
+
+
+intrinsics.width = 640
+intrinsics.height = 480
+intrinsics.ppx = 321.454
+intrinsics.ppy = 232.919
+intrinsics.fx = 388.656
+intrinsics.fy = 388.656
+intrinsics.model = rs.distortion.brown_conrady
+intrinsics.coeffs = [0, 0, 0, 0, 0]
+
 align_to = rs.stream.color
 align = rs.align(align_to)
 
@@ -213,7 +246,32 @@ print(f"Starting to capture images on SN: {device}")
 
 hand = HandDetection()
 ur3 = RobotClass()
-z=0
+
+
+def transformation_to_ur_coordinates(trans_x, trans_y, trans_z):
+    decimal_number = 2
+
+    if 0.95 >= trans_z >= 0.65:
+        trans_z = 0.1 + (trans_z - 0.65)
+    elif trans_z > 0.95:
+        trans_z = 0.4
+    elif trans_z < 0.65:
+        trans_z = 0.1
+
+    if trans_y <= -0.2:
+        trans_y = 0.4
+    elif trans_y >= 0.05:
+        trans_y = 0.15
+    else:
+        trans_y = ((trans_y-0.05)/(-0.2-0.05))*(0.4-0.15)+0.15
+
+    if trans_x > 0.3:
+        trans_x = 0.3
+    elif trans_x < -0.3:
+        trans_x = -0.3
+
+    return round(trans_x, decimal_number),round(trans_y, decimal_number), round(trans_z, decimal_number)
+
 
 while True:
     start_time = dt.datetime.today().timestamp()
@@ -229,18 +287,11 @@ while True:
 
     hand.frame_processing(aligned_depth_frame, input_color_image)
     images = hand.hand_images
-    if 0.95 >= hand.z >= 0.65:
-        z = 0.1 + (hand.z - 0.65)
-    elif hand.z > 0.95:
-        z = 0.4
-    elif hand.z < 0.65:
-        z = 0.1
 
-    x_screen = ((z-0.1)/(0.4-0.1))*(560-468)+468
-    y_screen = ((z-0.1)/(0.4-0.1))*(206-129)+129
+    result = rs.rs2_deproject_pixel_to_point(intrinsics, [hand.x, hand.y], hand.z)
 
-    x = (hand.x-320)*(0.6/x_screen)
-    y = hand.y*(0.25/y_screen)
+    print(result)
+    x, y, z = transformation_to_ur_coordinates(result[0], result[1], result[2])
 
     ur3.move_to_position(x, y, z)
 
@@ -253,10 +304,10 @@ while True:
 
     # Display images
     cv2.namedWindow(name_of_window, cv2.WINDOW_AUTOSIZE)
-    cv2.rectangle(images, (40, 137), (600, 343), (0, 255, 0), 2)
+    cv2.rectangle(images, (145, 115), (502, 262), (0, 255, 0), 2)
     cv2.putText(images, f"65 cm from camera, highest point on the robot.", (20, 135), font, fontScale, color, thickness,
                 cv2.LINE_AA)
-    cv2.rectangle(images, (86, 175), (554, 305), (255, 0, 0), 2)
+    cv2.rectangle(images, (198, 153), (446, 253), (255, 0, 0), 2)
     cv2.imshow(name_of_window, images)
     key = cv2.waitKey(1)
     # Press esc or 'q' to close the image window
