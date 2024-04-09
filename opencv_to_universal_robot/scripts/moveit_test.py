@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-import copy
 import rospy
 import moveit_commander
 import moveit_msgs.msg
@@ -18,12 +17,13 @@ class RobotClass:
         self.robot = moveit_commander.RobotCommander()
         # scene = moveit_commander.PlanningSceneInterface()
         self.group = moveit_commander.MoveGroupCommander("manipulator")
+        self.group.set_planning_time(10)
         # display_trajectory_publisher = rospy.Publisher("/scaled_pos_joint_traj_controller/follow_joint_trajectory", moveit_msgs.msg.DisplayTrajectory, queue_size=20)
         self.upright_constraints = Constraints()
         self.upright_constraints.name = "upright"
 
         self.robot_information()
-        self.robot_constrains()
+        # self.robot_constraints()
 
     def robot_information(self):
         # We can get the name of the reference frame for this robot:
@@ -43,15 +43,29 @@ class RobotClass:
         print(self.robot.get_current_state())
         print("")
 
-    def robot_constrains(self):
-        joint_constraints = JointConstraint()
-        joint_constraints.position = 0
-        joint_constraints.tolerance_above = 0
-        joint_constraints.tolerance_below = 3.14/4
-        joint_constraints.weight = 1
+    def robot_constraints(self):
+        constraint_pose = self.group.get_current_pose()
 
-        joint_constraints.joint_name = "wrist_1_joint"
-        self.upright_constraints.joint_constraints.append(joint_constraints)
+        orientation_constrains = OrientationConstraint()
+        orientation_constrains.header.frame_id = constraint_pose.header.frame_id
+        orientation_constrains.link_name = "wrist_3_link"
+
+        orientation_constrains.orientation.w = 0
+
+        orientation_constrains.orientation.x = 0
+        orientation_constrains.orientation.y = 0
+        orientation_constrains.orientation.z = 1
+
+        orientation_constrains.absolute_x_axis_tolerance = 1.0
+        orientation_constrains.absolute_y_axis_tolerance = 1.0
+        orientation_constrains.absolute_z_axis_tolerance = 1.0
+
+        orientation_constrains.weight = 1
+
+        self.upright_constraints.orientation_constraints = [orientation_constrains]
+        self.group.set_path_constraints(self.upright_constraints)
+
+
 
     @staticmethod
     def box_limits(check_x, check_y, check_z):
@@ -82,8 +96,12 @@ class RobotClass:
 
         x, y, z = self.box_limits(x, y, z)
 
+        print("x:",x)
+        print("y:",y)
+        print("z:", z)
+
         pose_target = geometry_msgs.msg.Pose()
-        pose_target.orientation.w = 1.0
+        pose_target.orientation.x = 1
         pose_target.position.x = x
         pose_target.position.y = y
         pose_target.position.z = z
