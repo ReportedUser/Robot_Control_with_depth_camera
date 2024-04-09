@@ -104,7 +104,7 @@ class RobotClass:
         print("z:", z)
 
         pose_target = geometry_msgs.msg.Pose()
-        pose_target.orientation.z = 1.0
+        pose_target.orientation.x = 1.0
         pose_target.position.x = x
         pose_target.position.y = y
         pose_target.position.z = z
