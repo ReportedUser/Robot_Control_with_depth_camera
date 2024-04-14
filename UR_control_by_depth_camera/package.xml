@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ur_control_by_depth_camera</name>
+  <version>1.0.0</version>
+  <description>This package contains a way of controlling robots using a depth camera, it has been tested on UR cobots, but with some light modifications it could be used with a different one.</description>
+
+  <maintainer email="pleasefirsttry@gmail.com">ReportedUser</maintainer>
+
+
+  <license>GPLv3</license>
+
+
+  <author email="pleasefirsttry@gmail.com">ReportedUser</author> 
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <build_depend>actionlib</build_depend>
+  <build_depend>cartesian_control_msgs</build_depend>
+  <build_depend>control_msgs</build_depend>
+  <build_depend>controller_manager_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>trajectory_msgs</build_depend>
+  <build_depend>image_transport</build_depend>
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>pyrealsense2</build_depend>
+  <build_depend>mediapipe</build_depend>
+  <build_depend>numpy</build_depend>
+
+  
+
+  <build_export_depend>actionlib</build_export_depend>
+  <build_export_depend>cartesian_control_msgs</build_export_depend>
+  <build_export_depend>control_msgs</build_export_depend>
+  <build_export_depend>controller_manager_msgs</build_export_depend>
+  <build_export_depend>geometry_msgs</build_export_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>trajectory_msgs</build_export_depend>
+  <build_export_depend>image_transport</build_export_depend>
+  <build_export_depend>cv_bridge</build_export_depend>
+  <build_export_depend>std_msgs</build_export_depend>
+  <build_export_depend>sensor_msgs</build_export_depend>
+  <build_export_depend>pyrealsense2</build_export_depend>
+  <build_export_depend>mediapipe</build_export_depend>
+  <build_export_depend>numpy</build_export_depend>
+  
+
+  <exec_depend>actionlib</exec_depend>
+  <exec_depend>cartesian_control_msgs</exec_depend>
+  <exec_depend>control_msgs</exec_depend>
+  <exec_depend>controller_manager_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>trajectory_msgs</exec_depend>
+  <exec_depend>image_transport</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>pyrealsense2</exec_depend>
+  <exec_depend>mediapipe</exec_depend>
+  <exec_depend>numpy</exec_depend>
+  
+
+
+  <export>
+
+  </export>
+</package>
