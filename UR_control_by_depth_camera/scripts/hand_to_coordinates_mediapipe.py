@@ -5,7 +5,9 @@ import cv2
 import numpy as np
 import datetime as dt
 
+from UR_control_by_depth_camera.robot_classes import HandDetection
 
+"""
 class HandDetection:
     def __init__(self):
 
@@ -67,6 +69,8 @@ class HandDetection:
             self.z = 0.7
 
         self.hand_images = hand_images
+"""
+
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 org = (10, 10)
@@ -132,9 +136,7 @@ print(f"\tConfiguration Successful for SN {device}")
 # ====== Get and process images ======
 print(f"Starting to capture images on SN: {device}")
 
-hand = HandDetection()
-
-
+hand = HandDetection(depth_scale)
 
 while True:
     start_time = dt.datetime.today().timestamp()
@@ -151,33 +153,16 @@ while True:
     hand.frame_processing(aligned_depth_frame, input_color_image)
     images = hand.hand_images
 
-    if 0.95 >= hand.z >= 0.65:
-        z = 0.1 + (hand.z - 0.65)
-    elif hand.z > 0.95:
-        z = 0.4
-    elif hand.z < 0.65:
-        z = 0.1
-
     result = rs.rs2_deproject_pixel_to_point(intrinsics, [hand.x, hand.y], hand.z)
 
-    print(result)
+    print(f"Current values are; \n x: {result[0]}, y: {result[1]}, z: {result[2]}")
 
-
-
-    time_diff = dt.datetime.today().timestamp() - start_time
-    fps = int(1 / time_diff)
-    org3 = (20, org[1] + 60)
-    images = cv2.putText(images, f"FPS: {fps}", org3, font, fontScale, color, thickness, cv2.LINE_AA)
-
-    name_of_window = 'SN: ' + str(device)
+    name_of_window = 'Camera being used: ' + str(device)
 
     # Display images
     cv2.namedWindow(name_of_window, cv2.WINDOW_AUTOSIZE)
-    cv2.rectangle(images, (145, 115), (502, 262), (0, 255, 0), 2)
-    cv2.putText(images, f"65 cm from camera, highest point on the robot.", (20, 135), font, fontScale, color, thickness,
-                cv2.LINE_AA)
-    cv2.rectangle(images, (198, 153), (446, 253), (255, 0, 0), 2)
     cv2.imshow(name_of_window, images)
+
     key = cv2.waitKey(1)
     # Press esc or 'q' to close the image window
     if key & 0xFF == ord('q') or key == 27:

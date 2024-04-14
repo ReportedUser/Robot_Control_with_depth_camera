@@ -138,6 +138,12 @@ class HandDetection:
         self.clipping_distance_in_meters = 1
         self.clipping_distance = self.clipping_distance_in_meters / depth_scale
 
+        """
+        self.x = 0
+        self.y = 0
+        self.z = 0.3
+        """
+
 
     def frame_processing(self, depth_frame, color_frame):
         depth_image = np.asanyarray(depth_frame.get_data())
@@ -187,5 +193,9 @@ class HandDetection:
         else:
             hand_images = cv2.putText(hand_images, "No Hands", self.org, self.font, self.fontScale, self.color, self.thickness, cv2.LINE_AA)
 
-        self.hand_images = hand_images
 
+        cv2.rectangle(hand_images, (145, 115), (502, 262), (0, 255, 0), 2)
+        cv2.putText(hand_images, f"65 cm from camera, highest point on the robot.", (20, 135), self.font, self.fontScale, self.color, self.thickness,
+            cv2.LINE_AA)
+        cv2.rectangle(hand_images, (198, 153), (446, 253), (255, 0, 0), 2)
+        self.hand_images = hand_images

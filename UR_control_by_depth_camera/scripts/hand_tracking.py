@@ -255,6 +255,7 @@ print(f"\tConfiguration Successful for SN {device}")
 print(f"Starting to capture images on SN: {device}")
 
 hand = HandDetection(depth_scale)
+
 ur3 = RobotClass()
 
 
@@ -300,25 +301,19 @@ while True:
 
     result = rs.rs2_deproject_pixel_to_point(intrinsics, [hand.x, hand.y], hand.z)
 
-    print(result)
+    print(f"Current values are; \n x: {result[0]}, y: {result[1]}, z: {result[2]}")
     x, y, z = transformation_to_ur_coordinates(result[0], result[1], result[2])
 
-    ur3.move_to_position(x, y, z)
 
-    time_diff = dt.datetime.today().timestamp() - start_time
-    fps = int(1 / time_diff)
-    org3 = (20, org[1] + 60)
-    images = cv2.putText(images, f"FPS: {fps}", org3, font, fontScale, color, thickness, cv2.LINE_AA)
-
-    name_of_window = 'SN: ' + str(device)
+    name_of_window = 'Camera being used: ' + str(device)
 
     # Display images
     cv2.namedWindow(name_of_window, cv2.WINDOW_AUTOSIZE)
-    cv2.rectangle(images, (145, 115), (502, 262), (0, 255, 0), 2)
-    cv2.putText(images, f"65 cm from camera, highest point on the robot.", (20, 135), font, fontScale, color, thickness,
-                cv2.LINE_AA)
-    cv2.rectangle(images, (198, 153), (446, 253), (255, 0, 0), 2)
     cv2.imshow(name_of_window, images)
+
+    # Move to position
+    ur3.move_to_position(x, y, z)
+
     key = cv2.waitKey(1)
     # Press esc or 'q' to close the image window
     if key & 0xFF == ord('q') or key == 27:
