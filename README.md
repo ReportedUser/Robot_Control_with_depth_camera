@@ -1,4 +1,4 @@
-# Universal_Robots_Depth_camera_control
+# Universal Robots Depth camera control
 
 This RoS package is used to control an Universal Robot with a depth camera.
 
@@ -111,3 +111,11 @@ rosrun Universal_Robots_Depth_camera_control hand_tracking
 If everything was done correctly, the robot should be following your every movement!
 
 *In case you are setting up your joint limits, you'll need to stop ur3_moveit_config before every change for them to be processed. Also, has_position_limits: false doesn't work and seems to bug the urcap on the simulator, so if you want to deactivate something just comment it out.
+
+
+## Next goals
+
+Next steps I'll be adding to this project:
+
+- Pick and Place using the depth camera.
+- Improve code qualty of life.
