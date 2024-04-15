@@ -48,10 +48,11 @@ $ echo $ROS_PACKAGE_PATH
 /home/youruser/catkin_ws/src:/opt/ros/noetic/share
 ```
 
+You also need to install the [UR simulator](https://www.universal-robots.com/download/?filters[]=98759&query=), make sure it's on the same network as your ROS machine. Follow the setuup tutorial on [UR Usage Example](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/usage_example.md) to install it and run the test_move script as said inside the control the robot section.
 
-Check that your ROS connection with the [UR simulator](https://www.universal-robots.com/download/?filters[]=98759&query=) is correct by using the tests presented in [UR Usage Example](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/usage_example.md). There you will also see an example of [MoveIt](https://moveit.ros.org/), some parts of it will be used in the setup, but don't worry right now!
+There you will also see an example of [MoveIt](https://moveit.ros.org/), some parts of it will be used in the setup, but don't worry right now!
 
-Now that your workspace is created, is time to start the package installation.
+Now that your workspace is created and the simulator works correctly, it's time to start the package installation.
 
 ## Package installation
 
@@ -60,7 +61,7 @@ To install this package, simply clone it to your workspace and build it.
 ```
 # cd ~/catkin_ws/
 
-$ git clone https://github.com/ReportedUser/opencv_to_universal_robot.git src/Universal_Robots_Depth_camera_control
+$ git clone https://github.com/ReportedUser/Robot_Control_with_depth_camera.git src/Robot_Control_with_depth_camera
 
 $ catkin_make
 
@@ -71,7 +72,7 @@ To do so, just go to:
 ```
 $ rosed ur3_moveit_config joint_limits.yaml
 ```
-This file contains limits for your robot, add your corresponding limits by typing at the end of each desired joint. An example would be:
+This file contains limits for your robot joints, add your corresponding limits by typing at the end of each desired joint. An example would be:
 ```
   ... 
 shoulder_lift_joint:
@@ -87,29 +88,26 @@ shoulder_pan_joint:
 
 If you don't know your joint limits, you can figure them out once the program is running.
 
-To finish it up, some libraries are needed:
-mediapipe      0.10.9 
-pyrealsense2   2.54.2.5684 
-opencv-python  4.9.0.80 
 
 ## Setting it up
 
 Now that the requirements are complete, we can start playing with it!
 
-First, on the simulator external control (can be found inside Installation -> URCaps) add your Host IP with custom port 50002 and your host name, then start the UR robot and load the [urcap](https://github.com/UniversalRobots/Universal_Robots_ExternalControl_URCap/releases).
+First, start the UR robot and load the [urcap](https://github.com/UniversalRobots/Universal_Robots_ExternalControl_URCap/releases).
 
-On ROS side you will need to start two launch files on different terminal windows.
+On the ROS side you will need to start two launch files on different terminal windows.
 ```
 $ roslaunch ur_robot_driver ur3_bringup.launch robot_ip:=your.robot.ip.adress
 ```
 ```
 $ roslaunch ur3_moveit_config moveit_planning_execution.launch
 ```
-And then the script.
+Now that the launch files are runing, you can start playing with this package scripts.
+
 ```
 rosrun Universal_Robots_Depth_camera_control hand_tracking
 ```
 
 If everything was done correctly, the robot should be following your every movement!
 
-*In case you are setting up your joint limits, you'll need to stop and relaunch ur3_moveit_config for the changes to be loaded.
+*In case you are setting up your joint limits, you'll need to stop ur3_moveit_config before every change for them to be processed. Also, has_position_limits: false doesn't work and seems to bug the urcap on the simulator, so if you want to deactivate something just comment it out.
