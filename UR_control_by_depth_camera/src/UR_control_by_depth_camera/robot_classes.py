@@ -1,8 +1,10 @@
 import sys
 import rospy
 import moveit_commander
-from moveit_msgs.msg import Constraints, OrientationConstraint
+from moveit_msgs.msg import Constraints
 import geometry_msgs.msg
+from scipy.spatial.transform import Rotation
+
 
 import mediapipe as mp
 import numpy as np
@@ -19,13 +21,15 @@ class RobotClass:
         # scene = moveit_commander.PlanningSceneInterface()
         self.group = moveit_commander.MoveGroupCommander("manipulator")
         self.group.set_planning_time(5)
-        # display_trajectory_publisher = rospy.Publisher("/scaled_pos_joint_traj_controller/follow_joint_trajectory", moveit_msgs.msg.DisplayTrajectory, queue_size=20)
+        # display_trajectory_publisher = rospy.Publisher("/scaled_pos_joint_traj_controller/follow_joint_trajectory",
+        # moveit_msgs.msg.DisplayTrajectory, queue_size=20)
         self.upright_constraints = Constraints()
         self.upright_constraints.name = "upright"
 
+        self.pose_target = geometry_msgs.msg.Pose()
 
+        self.euler2quaternion(180, 0, 0)
         self.robot_information()
-        # self.robot_constraints()
 
     def robot_information(self):
         # We can get the name of the reference frame for this robot:
@@ -44,31 +48,6 @@ class RobotClass:
         print("============ Printing robot state")
         print(self.robot.get_current_state())
         print("")
-
-    def robot_constraints(self):
-        constraint_pose = self.group.get_current_pose()
-
-        orientation_constrains = OrientationConstraint()
-        orientation_constrains.header.frame_id = constraint_pose.header.frame_id
-        orientation_constrains.link_name = "wrist_3_link"
-
-        orientation_constrains.orientation.w = 0
-
-        orientation_constrains.orientation.x = -1
-        orientation_constrains.orientation.y = 0
-        orientation_constrains.orientation.z = 0
-
-
-        orientation_constrains.absolute_x_axis_tolerance = 0.3
-        orientation_constrains.absolute_y_axis_tolerance = 0.3
-        orientation_constrains.absolute_z_axis_tolerance = 0.1
-
-        orientation_constrains.weight = 1
-
-        self.upright_constraints.orientation_constraints = [orientation_constrains]
-        self.group.set_path_constraints(self.upright_constraints)
-
-
 
     @staticmethod
     def box_limits(check_x, check_y, check_z):
@@ -95,6 +74,18 @@ class RobotClass:
 
         return check_x, check_y, check_z
 
+    def euler2quaternion(self, i, j, k):
+        """
+        takes roll, pitch and yaw and transforms to quaternion
+        if no values are given, uses 180, 0 and 0 by default
+        """
+        rot = Rotation.from_euler('xyz', [i, j, k], degrees=True)
+        quaternions = rot.as_quat()
+        self.pose_target.orientation.x = quaternions[0]
+        self.pose_target.orientation.y = quaternions[1]
+        self.pose_target.orientation.z = quaternions[2]
+        self.pose_target.orientation.w = quaternions[3]
+
     def move_to_position(self, x, y, z):
 
         x, y, z = self.box_limits(x, y, z)
@@ -103,12 +94,10 @@ class RobotClass:
         print("y:",y)
         print("z:", z)
 
-        pose_target = geometry_msgs.msg.Pose()
-        pose_target.orientation.x = -1.0
-        pose_target.position.x = x
-        pose_target.position.y = y
-        pose_target.position.z = z
-        self.group.set_pose_target(pose_target)
+        self.pose_target.position.x = x
+        self.pose_target.position.y = y
+        self.pose_target.position.z = z
+        self.group.set_pose_target(self.pose_target)
 
         plan = self.group.go(wait=True)
         self.finish_movement(plan)
@@ -116,7 +105,6 @@ class RobotClass:
     def finish_movement(self, finish_plan):
         self.group.stop()
         self.group.clear_pose_targets()
-        # self.group.execute(finish_plan, wait=True)
 
 
 class HandDetection:
