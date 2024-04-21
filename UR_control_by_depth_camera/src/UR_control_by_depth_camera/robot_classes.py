@@ -10,6 +10,30 @@ import mediapipe as mp
 import numpy as np
 import cv2
 
+def transformation_to_ur_coordinates(trans_x, trans_y, trans_z):
+    decimal_number = 2
+
+    if 0.95 >= trans_z >= 0.65:
+        trans_z = 0.1 + (trans_z - 0.65)
+    elif trans_z > 0.95:
+        trans_z = 0.4
+    elif trans_z < 0.65:
+        trans_z = 0.1
+
+    if trans_y <= -0.2:
+        trans_y = 0.4
+    elif trans_y >= 0.05:
+        trans_y = 0.15
+    else:
+        trans_y = ((trans_y-0.05)/(-0.2-0.05))*(0.4-0.15)+0.15
+
+    if trans_x > 0.3:
+        trans_x = 0.3
+    elif trans_x < -0.3:
+        trans_x = -0.3
+
+    return round(trans_x, decimal_number),round(trans_y, decimal_number), round(trans_z, decimal_number)
+
 
 class RobotClass:
 
@@ -126,12 +150,11 @@ class HandDetection:
         self.clipping_distance_in_meters = 1
         self.clipping_distance = self.clipping_distance_in_meters / depth_scale
 
-        """
-        self.x = 0
-        self.y = 0
-        self.z = 0.3
-        """
+        self.x = 11.0
+        self.y = 11.0
+        self.z = 21.0
 
+        self.orientation_dictionary = {}
 
     def frame_processing(self, depth_frame, color_frame):
         depth_image = np.asanyarray(depth_frame.get_data())
@@ -147,43 +170,70 @@ class HandDetection:
         color_image = cv2.flip(color_image, 1)
         color_images_rgb = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
 
-        self.hand_processing(depth_image_flipped, processing_images, color_images_rgb)
+        return depth_image_flipped, processing_images, color_images_rgb
 
-    def hand_processing(self, hand_depth_image_flipped, hand_images, hand_color_images_rgb):
+    def return_finger_positon(self, hand_to_inspect, flipped_hand_position_image, position_landmark):
+
+        hand_landmark_extraction = hand_to_inspect.landmark[position_landmark]
+        x = int(hand_landmark_extraction.x * len(flipped_hand_position_image[0]))
+        y = int(hand_landmark_extraction.y * len(flipped_hand_position_image))
+        if x >= len(flipped_hand_position_image[0]):
+            x = len(flipped_hand_position_image[0]) - 1
+        if y >= len(flipped_hand_position_image):
+            y = len(flipped_hand_position_image) - 1
+        mfk_distance = flipped_hand_position_image[y, x] * self.depth_scale  # meters
+
+        return x, y, mfk_distance
+
+    def hand_processing(self, depth_frame, color_frame):
+        hand_depth_image_flipped, hand_images, hand_color_images_rgb = self.frame_processing(depth_frame, color_frame)
         results = self.hands.process(hand_color_images_rgb)
         if results.multi_hand_landmarks:
             number_of_hands = len(results.multi_hand_landmarks)
             i = 0
             for handLms in results.multi_hand_landmarks:
                 self.mpDraw.draw_landmarks(hand_images, handLms, self.mpHands.HAND_CONNECTIONS)
-                org2 = (20, self.org[1] + (20 * (i + 1)))
                 hand_side_classification_list = results.multi_handedness[i]
                 hand_side = hand_side_classification_list.classification[0].label
-                middle_finger_knuckle = results.multi_hand_landmarks[i].landmark[9]
-                x = int(middle_finger_knuckle.x * len(hand_depth_image_flipped[0]))
-                y = int(middle_finger_knuckle.y * len(hand_depth_image_flipped))
-                if x >= len(hand_depth_image_flipped[0]):
-                    x = len(hand_depth_image_flipped[0]) - 1
-                if y >= len(hand_depth_image_flipped):
-                    y = len(hand_depth_image_flipped) - 1
-                mfk_distance = hand_depth_image_flipped[y, x] * self.depth_scale  # meters
-                hand_images = cv2.putText(hand_images,
-                                     f"{hand_side} Hand Distance: {mfk_distance:0.3} meters away on position x:{x} and y:{y}",
-                                     org2, self.font, self.fontScale, self.color, self.thickness, cv2.LINE_AA)
+                hand_inspection = results.multi_hand_landmarks[i]
+                self.x, self.y, self.z = self.return_finger_positon(hand_inspection, hand_depth_image_flipped, 9)
 
-                self.x = x
-                self.y = y
-                self.z = mfk_distance
-
+                self.draw_hand_and_comments(hand_side, hand_images, number_of_hands, i)
                 i += 1
-            hand_images = cv2.putText(hand_images, f"Hands: {number_of_hands}", self.org, self.font, self.fontScale, self.color, self.thickness,
-                                 cv2.LINE_AA)
         else:
-            hand_images = cv2.putText(hand_images, "No Hands", self.org, self.font, self.fontScale, self.color, self.thickness, cv2.LINE_AA)
+            self.hand_images = cv2.putText(hand_images, "No Hands", self.org, self.font, self.fontScale, self.color, self.thickness, cv2.LINE_AA)
 
+    def give_robot_orientation(self, depth_frame, color_frame):
+        pass
+        hand_depth_image_flipped, hand_images, hand_color_images_rgb = self.frame_processing(depth_frame, color_frame)
+        results = self.hands.process(hand_color_images_rgb)
+        if results.multi_hand_landmarks:
+            number_of_hands = len(results.multi_hand_landmarks)
+            i = 0
+            for handLms in results.multi_hand_landmarks:
+                self.mpDraw.draw_landmarks(hand_images, handLms, self.mpHands.HAND_CONNECTIONS)
+                hand_side_classification_list = results.multi_handedness[i]
+                hand_side = hand_side_classification_list.classification[0].label
+                hand_inspection = results.multi_hand_landmarks[i]
+                for position_landmark_finger in [5, 8]:
+                    self.orientation_dictionary[f"position {position_landmark_finger}"] = (
+                        list(self.return_finger_positon(hand_inspection, hand_depth_image_flipped, 9)))
+                self.draw_hand_and_comments(hand_side, hand_images, number_of_hands, i)
+        else:
+            self.hand_images = cv2.putText(hand_images, "No Hands", self.org, self.font, self.fontScale, self.color,
+                                           self.thickness, cv2.LINE_AA)
 
-        cv2.rectangle(hand_images, (145, 115), (502, 262), (0, 255, 0), 2)
-        cv2.putText(hand_images, f"65 cm from camera, highest point on the robot.", (20, 135), self.font, self.fontScale, self.color, self.thickness,
-            cv2.LINE_AA)
-        cv2.rectangle(hand_images, (198, 153), (446, 253), (255, 0, 0), 2)
-        self.hand_images = hand_images
+    def draw_hand_and_comments(self, hand_type, draw_image, hand_count, i):
+        org2 = (20, self.org[1] + (20 * (i + 1)))
+        draw_image= cv2.putText(draw_image,
+                                  f"{hand_type} Hand Distance: {self.z:0.3} meters away on position x:{self.x} and y:{self.y}",
+                                  org2, self.font, self.fontScale, self.color, self.thickness, cv2.LINE_AA)
+        draw_image = cv2.putText(draw_image, f"Hands: {hand_count}", self.org, self.font, self.fontScale,
+                                  self.color, self.thickness,
+                                  cv2.LINE_AA)
+        cv2.rectangle(draw_image, (145, 115), (502, 262), (0, 255, 0), 2)
+        cv2.putText(draw_image, f"65 cm from camera, highest point on the robot.", (20, 135), self.font, self.fontScale, self.color, self.thickness,
+                    cv2.LINE_AA)
+        cv2.rectangle(draw_image, (198, 153), (446, 253), (255, 0, 0), 2)
+
+        self.hand_images = draw_image
