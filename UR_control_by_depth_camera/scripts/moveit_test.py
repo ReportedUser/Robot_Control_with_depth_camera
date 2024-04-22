@@ -13,6 +13,7 @@ def main():
             choose_y = float(input())
             print("choose z:")
             choose_z = float(input())
+            ur3.euler2quaternion(180, 0, 0)
             ur3.move_to_position(choose_x, choose_y, choose_z)
     except KeyboardInterrupt:
         pass

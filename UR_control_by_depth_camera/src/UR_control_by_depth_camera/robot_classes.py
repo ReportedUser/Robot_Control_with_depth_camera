@@ -10,6 +10,7 @@ import mediapipe as mp
 import numpy as np
 import cv2
 
+
 def transformation_to_ur_coordinates(trans_x, trans_y, trans_z):
     decimal_number = 2
 
@@ -154,7 +155,7 @@ class HandDetection:
         self.y = 180.0
         self.z = 0.8
 
-        self.orientation_dictionary = {5 : [320, 180, 0.80], 8 : [325, 180, 0.80]}
+        self.orientation_dictionary = {5: [320, 180, 0.80], 8: [325, 180, 0.80]}
 
     def frame_processing(self, depth_frame, color_frame):
         depth_image = np.asanyarray(depth_frame.get_data())
@@ -218,7 +219,7 @@ class HandDetection:
                     self.orientation_dictionary[position_landmark_finger] = (
                         list(self.return_finger_positon(hand_inspection, hand_depth_image_flipped,
                                                         position_landmark_finger)))
-                print(self.orientation_dictionary)
+                self.x, self.y, self.z = self.orientation_dictionary[8]
                 self.draw_hand_and_comments(hand_side, hand_images, number_of_hands, i)
 
         else:

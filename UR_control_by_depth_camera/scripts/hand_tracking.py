@@ -4,7 +4,7 @@ import cv2
 import pyrealsense2 as rs
 import datetime as dt
 
-from UR_control_by_depth_camera.robot_classes import RobotClass, HandDetection
+from UR_control_by_depth_camera.robot_classes import RobotClass, HandDetection, transformation_to_ur_coordinates
 
 """
 class RGBDCamera:
@@ -80,30 +80,7 @@ print(f"Starting to capture images on SN: {device}")
 hand = HandDetection(depth_scale)
 ur3 = RobotClass()
 
-
-def transformation_to_ur_coordinates(trans_x, trans_y, trans_z):
-    decimal_number = 2
-
-    if 0.95 >= trans_z >= 0.65:
-        trans_z = 0.1 + (trans_z - 0.65)
-    elif trans_z > 0.95:
-        trans_z = 0.4
-    elif trans_z < 0.65:
-        trans_z = 0.1
-
-    if trans_y <= -0.2:
-        trans_y = 0.4
-    elif trans_y >= 0.05:
-        trans_y = 0.15
-    else:
-        trans_y = ((trans_y-0.05)/(-0.2-0.05))*(0.4-0.15)+0.15
-
-    if trans_x > 0.3:
-        trans_x = 0.3
-    elif trans_x < -0.3:
-        trans_x = -0.3
-
-    return round(trans_x, decimal_number),round(trans_y, decimal_number), round(trans_z, decimal_number)
+x_ant = y_ant = z_ant = 100
 
 
 while True:
@@ -118,7 +95,7 @@ while True:
     if not aligned_depth_frame or not input_color_image:
         continue
 
-    hand.frame_processing(aligned_depth_frame, input_color_image)
+    hand.hand_processing(aligned_depth_frame, input_color_image)
     images = hand.hand_images
 
     result = rs.rs2_deproject_pixel_to_point(intrinsics, [hand.x, hand.y], hand.z)
@@ -133,7 +110,11 @@ while True:
     cv2.imshow(name_of_window, images)
 
     # Move to position
-    ur3.move_to_position(x, y, z)
+    if abs(x - x_ant) > 0.02 or abs(y - y_ant) > 0.02 or abs(z - z_ant) > 0.02:
+        ur3.move_to_position(x, y, z)
+        x_ant = x
+        y_ant = y
+        z_ant = z
 
     key = cv2.waitKey(1)
     # Press esc or 'q' to close the image window
