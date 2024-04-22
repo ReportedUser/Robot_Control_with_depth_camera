@@ -72,42 +72,28 @@ class HandDetection:
 """
 
 
-font = cv2.FONT_HERSHEY_SIMPLEX
-org = (10, 10)
-fontScale = .5
-color = (0, 50, 255)
-thickness = 1
-
-# ====== Realsense ======
 realsense_ctx = rs.context()
+intrinsics = rs.intrinsics()
 device = realsense_ctx.devices[0].get_info(rs.camera_info.serial_number)
 pipeline = rs.pipeline()
 config = rs.config()
-background_removed_color = 153  # Grey
 
-intrinsics = rs.intrinsics()
-
-
-# ====== Enable Streams ======
-config.enable_device(device)
-
-# # For worse FPS, but better resolution:
-# stream_res_x = 1280
-# stream_res_y = 720
-# # For better FPS. but worse resolution:
 stream_res_x = 640
 stream_res_y = 480
-
 stream_fps = 30
 
+config.enable_device(device)
 config.enable_stream(rs.stream.depth, stream_res_x, stream_res_y, rs.format.z16, stream_fps)
 config.enable_stream(rs.stream.color, stream_res_x, stream_res_y, rs.format.bgr8, stream_fps)
+
 profile = pipeline.start(config)
-
-
 profile_stream = profile.get_stream(rs.stream.depth)
 print(profile_stream.as_video_stream_profile().get_intrinsics())
 
+align_to = rs.stream.color
+align = rs.align(align_to)
+depth_sensor = profile.get_device().first_depth_sensor()
+depth_scale = depth_sensor.get_depth_scale()
 
 intrinsics.width = 640
 intrinsics.height = 480
@@ -115,25 +101,17 @@ intrinsics.ppx = 321.454
 intrinsics.ppy = 232.919
 intrinsics.fx = 388.656
 intrinsics.fy = 388.656
-intrinsics.model = pyrealsense2.distortion.brown_conrady
+intrinsics.model = rs.distortion.brown_conrady
 intrinsics.coeffs = [0, 0, 0, 0, 0]
+"""
+stream_res_x = 640
+stream_res_y = 480
+stream_fps = 30
+intel_camera = RGBDCamera(stream_res_x, stream_res_y, stream_fps)
+"""
 
-f = 0.00188    # focal length of 1.88 mm, from https://www.mouser.com/pdfdocs/Intel_D400_Series_Datasheet.pdf
-
-align_to = rs.stream.color
-align = rs.align(align_to)
-
-# ====== Get depth Scale ======
-depth_sensor = profile.get_device().first_depth_sensor()
-depth_scale = depth_sensor.get_depth_scale()
 print(f"\tDepth Scale for Camera SN {device} is: {depth_scale}")
-
-# ====== Set clipping distance ======
-clipping_distance_in_meters = 1
-clipping_distance = clipping_distance_in_meters / depth_scale
 print(f"\tConfiguration Successful for SN {device}")
-
-# ====== Get and process images ======
 print(f"Starting to capture images on SN: {device}")
 
 hand = HandDetection(depth_scale)
@@ -150,7 +128,7 @@ while True:
     if not aligned_depth_frame or not input_color_image:
         continue
 
-    hand.frame_processing(aligned_depth_frame, input_color_image)
+    hand.hand_processing(aligned_depth_frame, input_color_image)
     images = hand.hand_images
 
     result = rs.rs2_deproject_pixel_to_point(intrinsics, [hand.x, hand.y], hand.z)

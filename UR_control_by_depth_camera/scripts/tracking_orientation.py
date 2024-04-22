@@ -1,7 +1,7 @@
 import cv2
 import pyrealsense2 as rs
 import datetime as dt
-
+import math
 from UR_control_by_depth_camera.robot_classes import RobotClass, HandDetection, transformation_to_ur_coordinates
 
 realsense_ctx = rs.context()
@@ -52,6 +52,13 @@ ur3 = RobotClass()
 
 
 def position_to_coordinates(position_dictionary):
+    """
+    position_dictionary: gets a dictionary where there are 2 hand landmarks.
+    Keys are hand landmark and values are a list of i, j and k positions.
+    Edits the hand.orientation_dictionary to get the deproject values for both points.
+    Returns the landmark of 8 (fingertip), where the TCP will move to.
+    """
+
     for position_landmarks in position_dictionary.keys():
         position_dictionary[position_landmarks] = rs.rs2_deproject_pixel_to_point(
             intrinsics, [position_dictionary[position_landmarks][0],
@@ -63,7 +70,6 @@ def position_to_coordinates(position_dictionary):
               f"y: {position_dictionary[position_landmarks][1]}, "
               f"z: {position_dictionary[position_landmarks][2]}."
               )
-    print(position_dictionary)
 
     coordinates_x, coordinates_y, coordinates_z = transformation_to_ur_coordinates(
         position_dictionary[8][0],
@@ -75,10 +81,21 @@ def position_to_coordinates(position_dictionary):
 
 
 def orientation_tracking(orientation_dictionary):
+    """
+    3rd point has 5 x and 8 y
+    """
+
     mcp_index_finger_position = orientation_dictionary[5]
     tip_index_finger_position = orientation_dictionary[8]
-    return orientation_quaternions
+    reference_point = [mcp_index_finger_position[0], tip_index_finger_position[1]]
+    to_tan = ((reference_point[1]- mcp_index_finger_position[1]) /
+              (tip_index_finger_position[0] - reference_point[0]))
 
+    orientation_quaternion_x = round(math.degrees(math.tan(to_tan)), 0)
+    return orientation_quaternion_x
+
+
+x_ant = y_ant = z_ant = 100
 
 while True:
     start_time = dt.datetime.today().timestamp()
@@ -95,7 +112,7 @@ while True:
     hand.give_robot_orientation(aligned_depth_frame, input_color_image)
     images = hand.hand_images
     x, y, z = position_to_coordinates(hand.orientation_dictionary)
-    quaternions_list = orientation_tracking(hand.orientation_dictionary)
+    quaternions_x = orientation_tracking(hand.orientation_dictionary)
 
     name_of_window = 'Camera being used: ' + str(device)
 
@@ -104,7 +121,13 @@ while True:
     cv2.imshow(name_of_window, images)
 
     # Move to position
-    ur3.move_to_position(x, y, z)
+    print(f"Angle right now is: {quaternions_x} degrees.")
+    ur3.euler2quaternion(quaternions_x, 0, 0)
+    if abs(x -x_ant) > 0.02 or abs(y - y_ant) > 0.02 or abs(z - z_ant) > 0.02:
+        ur3.move_to_position(x, y, z)
+        x_ant = x
+        y_ant = y
+        z_ant = z
 
     key = cv2.waitKey(1)
     # Press esc or 'q' to close the image window
