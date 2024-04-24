@@ -1,7 +1,7 @@
 import cv2
+import numpy as np
 import pyrealsense2 as rs
 import datetime as dt
-import math
 from UR_control_by_depth_camera.robot_classes import RobotClass, HandDetection, transformation_to_ur_coordinates
 
 realsense_ctx = rs.context()
@@ -87,16 +87,41 @@ def orientation_tracking(orientation_dictionary):
 
     mcp_index_finger_position = orientation_dictionary[5]
     tip_index_finger_position = orientation_dictionary[8]
+    """
     reference_point = [mcp_index_finger_position[0], tip_index_finger_position[1]]
-    to_tan = ((reference_point[1]- mcp_index_finger_position[1]) /
-              (tip_index_finger_position[0] - reference_point[0]))
 
-    orientation_quaternion_x = round(math.degrees(math.tan(to_tan)), 0)
-    return orientation_quaternion_x
+    try:
+        to_tan = ((reference_point[1] - mcp_index_finger_position[1]) /
+                  (tip_index_finger_position[0] - reference_point[0]))
+        orientation_quaternion_x = round(math.degrees(math.tan(to_tan)), 0)
+        return orientation_quaternion_x
+    except:
+        print("Can't reach that position.")
+    """
+    vector = np.array(tip_index_finger_position) - np.array(mcp_index_finger_position)
+    vector_norm = vector / np.linalg.norm(vector)
+    reference_x = np.array([1, 0, 0])
+
+    v = np.cross(reference_x, vector_norm)
+    s = np.linalg.norm(v)
+    c = np.dot(reference_x, vector_norm)
+    skew = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    r = np.eye(3) + skew + np.dot(skew, skew) * ((1 - c)/(s**2))
+
+    # Extract Euler angles
+    yaw = np.arctan2(r[1, 0], r[0, 0])
+    pitch = np.arcsin(-r[2, 0])
+    roll = np.arctan2(r[2, 1], r[2, 2])
+
+    yaw_deg = np.degrees(yaw)
+    pitch_deg = np.degrees(pitch)
+    roll_deg = np.degrees(roll)
+    return pitch_deg, yaw_deg, roll_deg
 
 
 x_ant = y_ant = z_ant = 100
-
+roll_ant = yawn_ant = 0
+pitch_ant = 180
 while True:
     start_time = dt.datetime.today().timestamp()
 
@@ -112,7 +137,9 @@ while True:
     hand.give_robot_orientation(aligned_depth_frame, input_color_image)
     images = hand.hand_images
     x, y, z = position_to_coordinates(hand.orientation_dictionary)
-    quaternions_x = orientation_tracking(hand.orientation_dictionary)
+    pitch_euler, yaw_euler, roll_euler = orientation_tracking(hand.orientation_dictionary)
+
+    print(f"Pitch: {pitch_euler}, Yaw: {yaw_euler}, Roll: {roll_euler}")
 
     name_of_window = 'Camera being used: ' + str(device)
 
@@ -120,10 +147,13 @@ while True:
     cv2.namedWindow(name_of_window, cv2.WINDOW_AUTOSIZE)
     cv2.imshow(name_of_window, images)
 
-    # Move to position
-    print(f"Angle right now is: {quaternions_x} degrees.")
-    ur3.euler2quaternion(quaternions_x, 0, 0)
-    if abs(x -x_ant) > 0.02 or abs(y - y_ant) > 0.02 or abs(z - z_ant) > 0.02:
+    if abs(pitch_euler - pitch_ant) > 3 or abs(yaw_euler - yawn_ant) > 3 or abs(roll_euler - roll_ant) > 3:
+        ur3.euler2quaternion(pitch_euler, yaw_euler, roll_euler)
+        pitch_ant = pitch_euler
+        yawn_ant = yaw_euler
+        roll_ant = roll_euler
+
+    if abs(x - x_ant) > 0.02 or abs(y - y_ant) > 0.02 or abs(z - z_ant) > 0.02:
         ur3.move_to_position(x, y, z)
         x_ant = x
         y_ant = y
