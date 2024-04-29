@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 import cv2
 import numpy as np
 import pyrealsense2 as rs
@@ -51,67 +53,42 @@ hand = HandDetection(depth_scale)
 ur3 = RobotClass()
 
 
-def position_to_coordinates(position_dictionary):
+def distorted_to_position(input_position: List) -> Tuple[float, float, float]:
     """
-    position_dictionary: gets a dictionary where there are 2 hand landmarks.
-    Keys are hand landmark and values are a list of i, j and k positions.
-    Edits the hand.orientation_dictionary to get the deproject values for both points.
-    Returns the landmark of 8 (fingertip), where the TCP will move to.
+    Input: positions from the rgbd camera.
+    Output: positions in a 3D space.
     """
+    pos_x, pos_y, pos_z = rs.rs2_deproject_pixel_to_point(
+        intrinsics, [input_position[0], input_position[1]], input_position[2])
 
-    for position_landmarks in position_dictionary.keys():
-        position_dictionary[position_landmarks] = rs.rs2_deproject_pixel_to_point(
-            intrinsics, [position_dictionary[position_landmarks][0],
-                         position_dictionary[position_landmarks][1]],
-            position_dictionary[position_landmarks][2]
-        )
-        print(f"Current values for {position_landmarks} are; \n "
-              f"x: {position_dictionary[position_landmarks][0]}, "
-              f"y: {position_dictionary[position_landmarks][1]}, "
-              f"z: {position_dictionary[position_landmarks][2]}."
-              )
-
-    coordinates_x, coordinates_y, coordinates_z = transformation_to_ur_coordinates(
-        position_dictionary[8][0],
-        position_dictionary[8][1],
-        position_dictionary[8][2]
-    )
-
-    return coordinates_x, coordinates_y, coordinates_z
+    return pos_x, pos_y, pos_z
 
 
 def orientation_tracking(orientation_dictionary):
     """
-    3rd point has 5 x and 8 y
+    3rd point has 5 x and 8 y.
     """
 
     mcp_index_finger_position = orientation_dictionary[5]
     tip_index_finger_position = orientation_dictionary[8]
-    """
-    reference_point = [mcp_index_finger_position[0], tip_index_finger_position[1]]
 
-    try:
-        to_tan = ((reference_point[1] - mcp_index_finger_position[1]) /
-                  (tip_index_finger_position[0] - reference_point[0]))
-        orientation_quaternion_x = round(math.degrees(math.tan(to_tan)), 0)
-        return orientation_quaternion_x
-    except:
-        print("Can't reach that position.")
-    """
-    vector = np.array(tip_index_finger_position) - np.array(mcp_index_finger_position)
-    vector_norm = vector / np.linalg.norm(vector)
-    reference_x = np.array([1, 0, 0])
+    vector = np.array(mcp_index_finger_position) - np.array(tip_index_finger_position)
+    direction_norm = np.linalg.norm(vector)
 
-    v = np.cross(reference_x, vector_norm)
-    s = np.linalg.norm(v)
-    c = np.dot(reference_x, vector_norm)
-    skew = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-    r = np.eye(3) + skew + np.dot(skew, skew) * ((1 - c)/(s**2))
+    if direction_norm != 0:
+        vector = vector / direction_norm
+    reference_x = np.array([0, 0, 1])
+
+    cross = np.cross(reference_x, vector)
+    dot = np.dot(reference_x, vector)
+    skew_symmetric_cross = np.array([[0, -cross[2], cross[1]], [cross[2], 0, -cross[0]], [-cross[1], cross[0], 0]])
+    rotation_matrix = np.eye(3) + skew_symmetric_cross + np.dot(skew_symmetric_cross
+                                                                , skew_symmetric_cross) * (1 / (1 + dot))
 
     # Extract Euler angles
-    yaw = np.arctan2(r[1, 0], r[0, 0])
-    pitch = np.arcsin(-r[2, 0])
-    roll = np.arctan2(r[2, 1], r[2, 2])
+    yaw = np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
+    pitch = np.arcsin(-rotation_matrix[2, 0])
+    roll = np.arctan2(rotation_matrix[2, 1], rotation_matrix[2, 2])
 
     yaw_deg = np.degrees(yaw)
     pitch_deg = np.degrees(pitch)
@@ -119,7 +96,9 @@ def orientation_tracking(orientation_dictionary):
     return pitch_deg, yaw_deg, roll_deg
 
 
-x_ant = y_ant = z_ant = 100
+x_ant = 0
+y_ant = 0.2
+z_ant = 0.3
 roll_ant = yawn_ant = 0
 pitch_ant = 180
 while True:
@@ -136,7 +115,10 @@ while True:
 
     hand.give_robot_orientation(aligned_depth_frame, input_color_image)
     images = hand.hand_images
-    x, y, z = position_to_coordinates(hand.orientation_dictionary)
+
+    x, y, z = distorted_to_position(hand.orientation_dictionary[8])
+    x, y, z = transformation_to_ur_coordinates(x, y, z)
+    print(x, y, z)
     pitch_euler, yaw_euler, roll_euler = orientation_tracking(hand.orientation_dictionary)
 
     print(f"Pitch: {pitch_euler}, Yaw: {yaw_euler}, Roll: {roll_euler}")
@@ -147,6 +129,8 @@ while True:
     cv2.namedWindow(name_of_window, cv2.WINDOW_AUTOSIZE)
     cv2.imshow(name_of_window, images)
 
+    # menos de 180 es kaka,
+    # ur3.euler2quaternion(pitch_euler, yaw_euler,  roll_euler)
     if abs(pitch_euler - pitch_ant) > 3 or abs(yaw_euler - yawn_ant) > 3 or abs(roll_euler - roll_ant) > 3:
         ur3.euler2quaternion(pitch_euler, yaw_euler, roll_euler)
         pitch_ant = pitch_euler
