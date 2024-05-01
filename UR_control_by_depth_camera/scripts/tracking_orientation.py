@@ -50,7 +50,7 @@ print(f"Starting to capture images on SN: {device}")
 
 
 hand = HandDetection(depth_scale)
-ur3 = RobotClass()
+ur3 = RobotClass("manipulator")
 
 
 def distorted_to_position(input_position: List) -> Tuple[float, float, float]:
@@ -64,20 +64,22 @@ def distorted_to_position(input_position: List) -> Tuple[float, float, float]:
     return pos_x, pos_y, pos_z
 
 
-def orientation_tracking(orientation_dictionary):
+def orientation_tracking(orientation_dictionary, last_direction=None):
     """
-    3rd point has 5 x and 8 y.
+    Getting rotations pitch, roll and yawn from vector made with fingers points.
     """
 
     mcp_index_finger_position = orientation_dictionary[5]
     tip_index_finger_position = orientation_dictionary[8]
 
-    vector = np.array(mcp_index_finger_position) - np.array(tip_index_finger_position)
+    vector = np.array(tip_index_finger_position) - np.array(mcp_index_finger_position)
     direction_norm = np.linalg.norm(vector)
 
     if direction_norm != 0:
         vector = vector / direction_norm
     reference_x = np.array([0, 0, 1])
+
+    # reference_x = last_direction if last_direction is not None else vector
 
     cross = np.cross(reference_x, vector)
     dot = np.dot(reference_x, vector)
@@ -93,14 +95,19 @@ def orientation_tracking(orientation_dictionary):
     yaw_deg = np.degrees(yaw)
     pitch_deg = np.degrees(pitch)
     roll_deg = np.degrees(roll)
-    return pitch_deg, yaw_deg, roll_deg
+    return roll_deg, pitch_deg, yaw_deg, vector
 
 
+name_of_window = 'Camera being used: ' + str(device)
 x_ant = 0
 y_ant = 0.2
 z_ant = 0.3
 roll_ant = yawn_ant = 0
 pitch_ant = 180
+previous_direction = None
+ur3.move_to_position(x_ant, y_ant, z_ant)
+ur3.euler2quaternion(pitch_ant, yawn_ant, roll_ant)
+
 while True:
     start_time = dt.datetime.today().timestamp()
 
@@ -115,24 +122,22 @@ while True:
 
     hand.give_robot_orientation(aligned_depth_frame, input_color_image)
     images = hand.hand_images
+    print(hand.orientation_dictionary[8], hand.orientation_dictionary[5])
 
     x, y, z = distorted_to_position(hand.orientation_dictionary[8])
     x, y, z = transformation_to_ur_coordinates(x, y, z)
-    print(x, y, z)
-    pitch_euler, yaw_euler, roll_euler = orientation_tracking(hand.orientation_dictionary)
+    roll_euler, pitch_euler, yaw_euler, previous_direction = orientation_tracking(
+        hand.orientation_dictionary, previous_direction)
 
+    print(f"x:{x}, y:{y}, z: {z}")
     print(f"Pitch: {pitch_euler}, Yaw: {yaw_euler}, Roll: {roll_euler}")
-
-    name_of_window = 'Camera being used: ' + str(device)
 
     # Display images
     cv2.namedWindow(name_of_window, cv2.WINDOW_AUTOSIZE)
     cv2.imshow(name_of_window, images)
 
-    # menos de 180 es kaka,
-    # ur3.euler2quaternion(pitch_euler, yaw_euler,  roll_euler)
     if abs(pitch_euler - pitch_ant) > 3 or abs(yaw_euler - yawn_ant) > 3 or abs(roll_euler - roll_ant) > 3:
-        ur3.euler2quaternion(pitch_euler, yaw_euler, roll_euler)
+        ur3.euler2quaternion(roll_euler, pitch_euler, yaw_euler)
         pitch_ant = pitch_euler
         yawn_ant = yaw_euler
         roll_ant = roll_euler
