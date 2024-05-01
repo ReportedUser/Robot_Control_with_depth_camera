@@ -78,10 +78,12 @@ print(f"Starting to capture images on SN: {device}")
 
 
 hand = HandDetection(depth_scale)
-ur3 = RobotClass()
+ur3 = RobotClass("manipulator")
 
-x_ant = y_ant = z_ant = 100
-
+x_ant = 0
+y_ant = 0.2
+z_ant = 0.3
+ur3.move_to_position(x_ant, y_ant, z_ant)
 
 while True:
     start_time = dt.datetime.today().timestamp()

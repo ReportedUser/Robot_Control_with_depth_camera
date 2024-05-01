@@ -38,13 +38,13 @@ def transformation_to_ur_coordinates(trans_x, trans_y, trans_z):
 
 class RobotClass:
 
-    def __init__(self):
+    def __init__(self, robot_name: str):
 
         moveit_commander.roscpp_initialize(sys.argv)
         rospy.init_node('move_group', anonymous=True)
         self.robot = moveit_commander.RobotCommander()
         # scene = moveit_commander.PlanningSceneInterface()
-        self.group = moveit_commander.MoveGroupCommander("manipulator")
+        self.group = moveit_commander.MoveGroupCommander(robot_name)
         self.group.set_planning_time(5)
         # display_trajectory_publisher = rospy.Publisher("/scaled_pos_joint_traj_controller/follow_joint_trajectory",
         # moveit_msgs.msg.DisplayTrajectory, queue_size=20)
