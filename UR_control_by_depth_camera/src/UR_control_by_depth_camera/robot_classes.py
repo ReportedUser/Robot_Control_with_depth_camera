@@ -104,7 +104,7 @@ class RobotClass:
         takes roll, pitch and yaw and transforms to quaternion
         if no values are given, uses 180, 0 and 0 by default
         """
-        rot = Rotation.from_euler('xyz', [i, j, k], degrees=True)
+        rot = Rotation.from_euler('xzy', [i, k, j], degrees=True)
         quaternions = rot.as_quat()
         self.pose_target.orientation.x = quaternions[0]
         self.pose_target.orientation.y = quaternions[1]
