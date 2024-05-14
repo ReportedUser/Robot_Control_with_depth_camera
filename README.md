@@ -95,14 +95,19 @@ Now that the requirements are complete, we can start playing with it!
 
 First, start the UR robot and load the [urcap](https://github.com/UniversalRobots/Universal_Robots_ExternalControl_URCap/releases).
 
-On the ROS side you will need to start two launch files on different terminal windows.
+First of all, you should calibrate the robot. Follow the [Universal Robot Calibration Guide](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_calibration/README.md) in order to calibrate.
+Once it has been calibrated, either follow then next instrucction adding the calibration file or launch it via your new launch file with the calibration.
+
+Next step will be to start two launch files on different terminal windows.
 ```
 $ roslaunch ur_robot_driver ur3_bringup.launch robot_ip:=your.robot.ip.adress
 ```
 ```
 $ roslaunch ur3_moveit_config moveit_planning_execution.launch
 ```
-Now that the launch files are runing, you can start playing with this package scripts.
+First one is the launch file that connects to the robot, second one adds ros nodes for moveit controls.
+
+Now that the launch files are runing, you can start playing with this package scripts, For example, the next script gets the cobot imitating the hand movement.
 
 ```
 rosrun Universal_Robots_Depth_camera_control hand_tracking
