@@ -70,7 +70,7 @@ def orientation_tracking(orientation_dictionary, last_direction=None):
     """
 
     mcp_index_finger_position = orientation_dictionary[5]
-    tip_index_finger_position = orientation_dictionary[8]
+    tip_index_finger_position = [orientation_dictionary[8][1], orientation_dictionary[8][0], orientation_dictionary[8][2]]
 
     vector = np.array(tip_index_finger_position) - np.array(mcp_index_finger_position)
     direction_norm = np.linalg.norm(vector)
@@ -99,8 +99,8 @@ def orientation_tracking(orientation_dictionary, last_direction=None):
 
 
 name_of_window = 'Camera being used: ' + str(device)
-x_ant = 0
-y_ant = 0.2
+x_ant = 0.2
+y_ant = 0
 z_ant = 0.3
 roll_ant = yawn_ant = 0
 pitch_ant = 180
@@ -142,7 +142,7 @@ while True:
         yawn_ant = yaw_euler
         roll_ant = roll_euler
 
-    if abs(x - x_ant) > 0.02 or abs(y - y_ant) > 0.02 or abs(z - z_ant) > 0.02:
+    if abs(x - x_ant) > 0.02 or abs(y - y_ant) > 0.02 or abs(z - z_ant) > 0.02 or abs(z - z_ant) < 0.3:
         ur3.move_to_position(x, y, z)
         x_ant = x
         y_ant = y

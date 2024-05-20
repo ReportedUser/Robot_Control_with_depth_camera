@@ -4,6 +4,7 @@ import moveit_commander
 from moveit_msgs.msg import Constraints
 import geometry_msgs.msg
 from scipy.spatial.transform import Rotation
+from typing import Tuple
 
 
 import mediapipe as mp
@@ -11,29 +12,29 @@ import numpy as np
 import cv2
 
 
-def transformation_to_ur_coordinates(trans_x, trans_y, trans_z):
+def transformation_to_ur_coordinates(trans_x: float, trans_y: float, trans_z: float) -> Tuple[float, float, float]:
     decimal_number = 2
 
     if 0.95 >= trans_z >= 0.65:
-        trans_z = 0.1 + (trans_z - 0.65)
+        trans_z = 0.2 + (trans_z - 0.65)
     elif trans_z > 0.95:
-        trans_z = 0.4
+        trans_z = 0.5
     elif trans_z < 0.65:
-        trans_z = 0.1
+        trans_z = 0.2
 
     if trans_y <= -0.2:
-        trans_y = 0.4
+        trans_y = 0.35
     elif trans_y >= 0.05:
         trans_y = 0.15
     else:
-        trans_y = ((trans_y-0.05)/(-0.2-0.05))*(0.4-0.15)+0.15
+        trans_y = ((trans_y-0.05)/(-0.2-0.05))*(0.35-0.15)+0.15
 
-    if trans_x > 0.3:
-        trans_x = 0.3
-    elif trans_x < -0.3:
-        trans_x = -0.3
+    if trans_x > 0.2:
+        trans_x = 0.2
+    elif trans_x < -0.2:
+        trans_x = -0.2
 
-    return round(trans_x, decimal_number),round(trans_y, decimal_number), round(trans_z, decimal_number)
+    return round(trans_y, decimal_number),round(trans_x, decimal_number), round(trans_z, decimal_number)
 
 
 class RobotClass:
@@ -78,11 +79,11 @@ class RobotClass:
     def box_limits(check_x, check_y, check_z):
         max_x= 0.3
         max_y = 0.4
-        max_z = 0.4
+        max_z = 0.5
 
         min_x = -0.3
         min_y = 0.15
-        min_z = 0.1
+        min_z = 0.2
 
         if check_x > max_x:
             check_x = max_x
@@ -104,7 +105,7 @@ class RobotClass:
         takes roll, pitch and yaw and transforms to quaternion
         if no values are given, uses 180, 0 and 0 by default
         """
-        rot = Rotation.from_euler('xzy', [i, k, j], degrees=True)
+        rot = Rotation.from_euler('xzy', [i, j, k], degrees=True)
         quaternions = rot.as_quat()
         self.pose_target.orientation.x = quaternions[0]
         self.pose_target.orientation.y = quaternions[1]
@@ -113,7 +114,7 @@ class RobotClass:
 
     def move_to_position(self, x, y, z):
 
-        x, y, z = self.box_limits(x, y, z)
+        # x, y, z = self.box_limits(x, y, z)
 
         print("x:",x)
         print("y:",y)

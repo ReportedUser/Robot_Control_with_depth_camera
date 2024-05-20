@@ -5,7 +5,14 @@ from UR_control_by_depth_camera.robot_classes import RobotClass
 
 def main():
     try:
-        ur3 = RobotClass()
+        ur3 = RobotClass("manipulator")
+
+        x_ant = 0.2
+        y_ant = 0
+        z_ant = 0.3
+
+        ur3.move_to_position(x_ant, y_ant, z_ant)
+
         while True:
             print("choose x:")
             choose_x = float(input())

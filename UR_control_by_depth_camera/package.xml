@@ -24,7 +24,6 @@
   <build_depend>trajectory_msgs</build_depend>
   <build_depend>image_transport</build_depend>
   <build_depend>cv_bridge</build_depend>
-  <build_depend>opencv2</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>pyrealsense2</build_depend>
@@ -42,7 +41,6 @@
   <build_export_depend>trajectory_msgs</build_export_depend>
   <build_export_depend>image_transport</build_export_depend>
   <build_export_depend>cv_bridge</build_export_depend>
-  <build_export_depend>opencv2</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>pyrealsense2</build_export_depend>
@@ -59,7 +57,6 @@
   <exec_depend>trajectory_msgs</exec_depend>
   <exec_depend>image_transport</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
-  <exec_depend>opencv2</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>pyrealsense2</exec_depend>

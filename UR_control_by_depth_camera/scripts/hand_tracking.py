@@ -65,12 +65,6 @@ intrinsics.fx = 388.656
 intrinsics.fy = 388.656
 intrinsics.model = rs.distortion.brown_conrady
 intrinsics.coeffs = [0, 0, 0, 0, 0]
-"""
-stream_res_x = 640
-stream_res_y = 480
-stream_fps = 30
-intel_camera = RGBDCamera(stream_res_x, stream_res_y, stream_fps)
-"""
 
 print(f"\tDepth Scale for Camera SN {device} is: {depth_scale}")
 print(f"\tConfiguration Successful for SN {device}")
@@ -80,8 +74,8 @@ print(f"Starting to capture images on SN: {device}")
 hand = HandDetection(depth_scale)
 ur3 = RobotClass("manipulator")
 
-x_ant = 0
-y_ant = 0.2
+y_ant = 0
+x_ant = 0.2
 z_ant = 0.3
 ur3.move_to_position(x_ant, y_ant, z_ant)
 
