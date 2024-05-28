@@ -6,6 +6,7 @@ import datetime as dt
 
 from UR_control_by_depth_camera.robot_classes import RobotClass, HandDetection, transformation_to_ur_coordinates
 
+box_limits = (-0.2, 0.2, 0.4, -0.35, -0.2, 0.25)
 """
 class RGBDCamera:
     def __init__(self, res_x, res_y, camera_fps):
@@ -72,7 +73,7 @@ print(f"Starting to capture images on SN: {device}")
 
 
 hand = HandDetection(depth_scale)
-ur3 = RobotClass("manipulator")
+ur3 = RobotClass("manipulator", box_limits)
 
 y_ant = 0
 x_ant = 0.2
