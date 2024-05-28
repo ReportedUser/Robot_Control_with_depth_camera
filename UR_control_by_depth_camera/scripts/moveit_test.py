@@ -2,12 +2,14 @@
 
 from UR_control_by_depth_camera.robot_classes import RobotClass
 
+box_constrains = (-0.2, 0.2, 0.4, -0.35, -0.2, 0.25)
+
 
 def main():
     try:
-        ur3 = RobotClass("manipulator")
+        ur3 = RobotClass("manipulator", box_constrains)
 
-        x_ant = 0.2
+        x_ant = -0.25
         y_ant = 0
         z_ant = 0.3
 
