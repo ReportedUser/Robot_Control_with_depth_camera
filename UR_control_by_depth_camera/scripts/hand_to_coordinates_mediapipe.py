@@ -1,8 +1,5 @@
-import pyrealsense2
 import pyrealsense2 as rs
-import mediapipe as mp
 import cv2
-import numpy as np
 import datetime as dt
 
 from UR_control_by_depth_camera.robot_classes import HandDetection
