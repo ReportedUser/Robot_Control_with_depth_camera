@@ -54,7 +54,6 @@ print(f"Starting to capture images on SN: {device}")
 hand = HandDetection(depth_scale)
 ur3 = RobotClass("manipulator", box_limits)
 
-previous_direction = None
 ur3.move_to_position(original_x, original_y, original_z)
 ur3.euler2quaternion(original_roll, original_pitch, original_yawn)
 
@@ -70,7 +69,7 @@ def distorted_to_position(input_position: List) -> List:
     return [pos_x, pos_y, pos_z]
 
 
-def orientation_tracking(orientation_dictionary, last_direction=None):
+def orientation_tracking(orientation_dictionary):
     """
     Getting rotations pitch, roll and yawn from vector made with fingers points.
     """
@@ -101,51 +100,11 @@ def orientation_tracking(orientation_dictionary, last_direction=None):
     yaw_deg = np.degrees(yaw)
     pitch_deg = np.degrees(pitch)
     roll_deg = np.degrees(roll)
-    return roll_deg, pitch_deg, yaw_deg, vector
+    return roll_deg, pitch_deg, yaw_deg
 
 
 filter_position_list = {"x": [original_x], "y": [original_y], "z": [original_z]}
 filter_angle_list = {"roll": [original_roll], "pitch": [original_pitch], "yawn": [original_yawn]}
-
-"""
-def position_and_angle_filters(position: List, angles: List):
-
-    current_x = position[0]
-    current_y = position[1]
-    current_z = position[2]
-
-    current_roll = angles[0]
-    current_pitch = angles[1]
-    current_yawn = angles[2]
-
-    if all(abs(current_yawn - roll) < 5 for roll in filter_angle_list["yawn"]):
-            # all(abs(yawn < 5) for yawn in filter_angle_list["yawn"])):
-        ur3.euler2quaternion(0, 0, current_yawn)
-        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n changed angle \n XXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-
-    if (all(abs(current_x - filter_x) < 0.02 for filter_x in filter_position_list["x"])
-            or all(abs(current_y - filter_y) < 0.02 for filter_y in filter_position_list["y"])
-            or all(abs(current_z - filter_z) < 0.02 for filter_z in filter_position_list["z"])):
-        ur3.move_to_position(current_x, current_y, current_z)
-
-    filter_angle_list["roll"].append(current_roll)
-    filter_angle_list["pitch"].append(current_pitch)
-    filter_angle_list["yawn"].append(current_yawn)
-
-    if len(filter_angle_list["roll"]) >= 5:
-        del filter_angle_list["roll"][0]
-        del filter_angle_list["pitch"][0]
-        del filter_angle_list["yawn"][0]
-
-    filter_position_list["x"].append(current_x)
-    filter_position_list["y"].append(current_y)
-    filter_position_list["z"].append(current_z)
-
-    if len(filter_position_list["x"]) >= 5:
-        del filter_position_list["x"][0]
-        del filter_position_list["y"][0]
-        del filter_position_list["z"][0]
-"""
 
 
 def create_vector(p1, p2):
@@ -184,17 +143,26 @@ class QuaternionFilters:
         self.quaternions = []
 
     def add_quaternion(self, new_quaternion):
+        """
+        Adds quaternions to a 10 values queue and returns their mean.
+
+        :param new_quaternion:
+        :return:
+        """
         if len(self.quaternions) < 10:
             self.quaternions.append(new_quaternion)
             return self.mean_quaternions()
         else:
-            # differences = np.array([np.linalg.norm(new_quaternion -q) for q in self.quaternions])
-            # if np.all(differences < self.threshold):
             self.quaternions.pop(0)
             self.quaternions.append(new_quaternion)
             return self.mean_quaternions()
 
     def mean_quaternions(self):
+        """
+        Calculates mean from quaternions values by transforming them to rotations.
+
+        :return:
+        """
         if len(self.quaternions) == 0:
             return None
         elif len(self.quaternions) == 1:
@@ -206,7 +174,6 @@ class QuaternionFilters:
 
 
 name_of_window = 'Camera being used: ' + str(device)
-original_dict = 0
 
 q_filter = QuaternionFilters(threshold=0.1)
 
@@ -224,26 +191,22 @@ while True:
 
     hand.give_robot_orientation(aligned_depth_frame, input_color_image)
     images = hand.hand_images
-    # print(hand.orientation_dictionary[8], hand.orientation_dictionary[5])
 
     orientation_dict = {"tip": distorted_to_position(hand.orientation_dictionary[8]),
                         "base": distorted_to_position(hand.orientation_dictionary[5])}
     x, y, z = transformation_to_ur_coordinates(orientation_dict["base"][0], orientation_dict["base"][1],
                                                orientation_dict["base"][2])
-    roll_euler, pitch_euler, yaw_euler, previous_direction = orientation_tracking(
-        orientation_dict, previous_direction)
+
+    # Angles are not used, only here to print.
+    roll_euler, pitch_euler, yaw_euler = orientation_tracking(
+        orientation_dict)
 
     print(orientation_dict)
-    # print(f"x:{x}, y:{y}, z: {z}")
     print(f"Roll: {roll_euler}, Pitch: {pitch_euler}, Yaw: {yaw_euler}")
 
     # Display images
     cv2.namedWindow(name_of_window, cv2.WINDOW_AUTOSIZE)
     cv2.imshow(name_of_window, images)
-
-    if type(original_dict) is int:
-        original_dict = orientation_dict
-        continue
 
     if all(value == 0 for value in orientation_dict["base"]) or all(value == 0 for value in orientation_dict["tip"]):
         continue
@@ -258,7 +221,6 @@ while True:
         original_y = y
         original_z = z
 
-    # create_vector(original_dict["base"], original_dict["tip"]),
     quaternion_pls = vector_to_quaternion(
         np.array([0, 0, 1]),
         create_vector(new_orientation["base"], new_orientation["tip"])
@@ -266,16 +228,12 @@ while True:
 
     quaternion_to_move = q_filter.add_quaternion(quaternion_pls)
     print("#########@########")
-    with open("/home/david/Documents/quaternions_info/quaternions_log_lastvector_to_quaternionrotation.txt", "a") as file:
+    with open("../log/quaternions_log_lastvector_to_quaternionrotation.txt", "a") as file:
         file.write(str(quaternion_to_move))
     print(quaternion_pls)
     print("#########@########")
 
     ur3.define_quaternions(quaternion_to_move)
-
-    original_dict = orientation_dict
-
-    # position_and_angle_filters([x, y, z], [roll_euler, pitch_euler, yaw_euler])
 
     key = cv2.waitKey(1)
     # Press esc or 'q' to close the image window
