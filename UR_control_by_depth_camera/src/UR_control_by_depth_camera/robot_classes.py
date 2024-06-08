@@ -4,41 +4,67 @@ import moveit_commander
 from moveit_msgs.msg import Constraints
 import geometry_msgs.msg
 from scipy.spatial.transform import Rotation
-
+from typing import Tuple
 
 import mediapipe as mp
 import numpy as np
 import cv2
 
+ArgsType = Tuple[int, int, int, int, int, int]
 
-def transformation_to_ur_coordinates(trans_x, trans_y, trans_z):
+
+def transformation_to_ur_coordinates(trans_x: float, trans_y: float, trans_z: float) -> Tuple[float, float, float]:
+    """
+    I changed the output of x and y to simplify my specific real life case as the camera long side is x
+    while the robot long side is the y.
+
+    Transforms coordinates taken from the camera to the robot workspace.
+
+    You should make your own transformation_to_ur_coordinates.
+    :param trans_x: x value taken from camera.
+    :param trans_y: y value taken from camera.
+    :param trans_z: z value taken from camera.
+    :return:
+    """
+
     decimal_number = 2
 
-    if 0.95 >= trans_z >= 0.65:
-        trans_z = 0.1 + (trans_z - 0.65)
-    elif trans_z > 0.95:
+    if 0.8 >= trans_z >= 0.65:
+        trans_z = 0.25 + (trans_z - 0.65)
+    elif trans_z > 0.8:
         trans_z = 0.4
+        print("Z outside of limits.")
     elif trans_z < 0.65:
-        trans_z = 0.1
+        trans_z = 0.25
+        print("Z outside of limits.")
 
     if trans_y <= -0.2:
-        trans_y = 0.4
+        trans_y = -0.2
+        print("Y outside of limits.")
     elif trans_y >= 0.05:
-        trans_y = 0.15
+        trans_y = -0.35
+        print("Y outside of limits.")
     else:
-        trans_y = ((trans_y-0.05)/(-0.2-0.05))*(0.4-0.15)+0.15
+        trans_y = ((trans_y-0.05)/(-0.2-0.05))*(-0.2--0.35)-0.35
 
-    if trans_x > 0.3:
-        trans_x = 0.3
-    elif trans_x < -0.3:
-        trans_x = -0.3
+    if trans_x > 0.2:
+        trans_x = 0.2
+        print("X outside of limits.")
+    elif trans_x < -0.2:
+        trans_x = -0.2
+        print("X outside of limits.")
 
-    return round(trans_x, decimal_number),round(trans_y, decimal_number), round(trans_z, decimal_number)
+    return round(trans_y, decimal_number), round(trans_x, decimal_number), round(trans_z, decimal_number)
 
 
 class RobotClass:
 
-    def __init__(self, robot_name: str):
+    def __init__(self, robot_name: str, *args: ArgsType):
+
+        try:
+            self.box_constrains = self.unpack_args(args)
+        except ValueError as e:
+            print(f"Error: {e}")
 
         moveit_commander.roscpp_initialize(sys.argv)
         rospy.init_node('move_group', anonymous=True)
@@ -56,6 +82,15 @@ class RobotClass:
         self.euler2quaternion(180, 0, 0)
         self.robot_information()
 
+    @staticmethod
+    def unpack_args(arguments):
+        limits = [list(arguments)[0][i] for i in range(6)]
+        print(limits)
+        if len(limits) == 6:
+            return limits
+        else:
+            raise ValueError("Only accepts 6 arguments on the following order; max x, y, z and min x, y, z")
+
     def robot_information(self):
         # We can get the name of the reference frame for this robot:
         planning_frame = self.group.get_planning_frame()
@@ -72,17 +107,24 @@ class RobotClass:
         # robot:
         print("============ Printing robot state")
         print(self.robot.get_current_state())
-        print("")
 
-    @staticmethod
-    def box_limits(check_x, check_y, check_z):
-        max_x= 0.3
-        max_y = 0.4
-        max_z = 0.4
+    def box_limits(self, check_x, check_y, check_z):
+        """
+        Defines the limits of the robot workspace.
 
-        min_x = -0.3
-        min_y = 0.15
-        min_z = 0.1
+        :param check_x: x given to move at.
+        :param check_y: y given to move at.
+        :param check_z: z given to move at.
+        :return: returns the same value if inside the limits or the limit.
+        """
+
+        max_x = self.box_constrains[0]
+        max_y = self.box_constrains[1]
+        max_z = self.box_constrains[2]
+
+        min_x = self.box_constrains[3]
+        min_y = self.box_constrains[4]
+        min_z = self.box_constrains[5]
 
         if check_x > max_x:
             check_x = max_x
@@ -99,12 +141,27 @@ class RobotClass:
 
         return check_x, check_y, check_z
 
+    def define_quaternions(self, quaternions_list):
+        """
+        Used to define robot orientation via quaternions. accepts a list of 4 quaternions on the following order:
+        :param quaternions_list: [w, x, y, z]
+        :return:
+        """
+
+        if len(quaternions_list) != 4:
+            print(f"Only accepts 4 values, but {len(quaternions_list)} where given.")
+        else:
+            self.pose_target.orientation.x = quaternions_list[1]
+            self.pose_target.orientation.y = quaternions_list[2]
+            self.pose_target.orientation.z = quaternions_list[3]
+            self.pose_target.orientation.w = quaternions_list[0]
+
     def euler2quaternion(self, i, j, k):
         """
         takes roll, pitch and yaw and transforms to quaternion
         if no values are given, uses 180, 0 and 0 by default
         """
-        rot = Rotation.from_euler('xzy', [i, k, j], degrees=True)
+        rot = Rotation.from_euler('xzy', [i, j, k], degrees=True)
         quaternions = rot.as_quat()
         self.pose_target.orientation.x = quaternions[0]
         self.pose_target.orientation.y = quaternions[1]
@@ -112,12 +169,24 @@ class RobotClass:
         self.pose_target.orientation.w = quaternions[3]
 
     def move_to_position(self, x, y, z):
+        """
+        Moves to the given location.
+
+        :param x:
+        :param y:
+        :param z:
+        :return:
+        """
 
         x, y, z = self.box_limits(x, y, z)
 
+        print("============ Moving to position:")
         print("x:",x)
         print("y:",y)
         print("z:", z)
+        print("============ Current working space")
+        print(f"Max x: {self.box_constrains[0]}, max y: {self.box_constrains[1]}, max z: {self.box_constrains[2]} \n"
+              f"min x: {self.box_constrains[3]}, min y: {self.box_constrains[4]}, min z: {self.box_constrains[5]}")
 
         self.pose_target.position.x = x
         self.pose_target.position.y = y
@@ -128,6 +197,12 @@ class RobotClass:
         self.finish_movement(plan)
 
     def finish_movement(self, finish_plan):
+        """
+        NOT USED. If a trajectory was wanted, here would be where it would be executed.
+
+        :param finish_plan:
+        :return:
+        """
         self.group.stop()
         self.group.clear_pose_targets()
 

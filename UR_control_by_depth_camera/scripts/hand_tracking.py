@@ -6,6 +6,7 @@ import datetime as dt
 
 from UR_control_by_depth_camera.robot_classes import RobotClass, HandDetection, transformation_to_ur_coordinates
 
+box_limits = (-0.2, 0.2, 0.4, -0.35, -0.2, 0.25)
 """
 class RGBDCamera:
     def __init__(self, res_x, res_y, camera_fps):
@@ -65,12 +66,6 @@ intrinsics.fx = 388.656
 intrinsics.fy = 388.656
 intrinsics.model = rs.distortion.brown_conrady
 intrinsics.coeffs = [0, 0, 0, 0, 0]
-"""
-stream_res_x = 640
-stream_res_y = 480
-stream_fps = 30
-intel_camera = RGBDCamera(stream_res_x, stream_res_y, stream_fps)
-"""
 
 print(f"\tDepth Scale for Camera SN {device} is: {depth_scale}")
 print(f"\tConfiguration Successful for SN {device}")
@@ -78,10 +73,10 @@ print(f"Starting to capture images on SN: {device}")
 
 
 hand = HandDetection(depth_scale)
-ur3 = RobotClass("manipulator")
+ur3 = RobotClass("manipulator", box_limits)
 
-x_ant = 0
-y_ant = 0.2
+y_ant = 0
+x_ant = 0.2
 z_ant = 0.3
 ur3.move_to_position(x_ant, y_ant, z_ant)
 
