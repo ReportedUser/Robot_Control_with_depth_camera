@@ -1,6 +1,6 @@
 # Universal Robots Depth camera control
 
-This RoS package is used to control an Universal Robot with a depth camera.
+This RoS package is used to control a Universal Robot with a depth camera.
 
 ## Components
 
