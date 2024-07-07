@@ -1,6 +1,6 @@
-# Universal Robots Depth camera control
+#  Robots Depth camera control
 
-This RoS package is used to control a Universal Robot with a depth camera.
+This RoS package is used to control a  Robot with a depth camera.
 
 ## Components
 
@@ -16,8 +16,9 @@ This project's objective is to follow the position of a hand with a robot.
 In order to do so, this package makes use of mediapipe to identify the hand and moveit for the communication with the robot..
 
 ## Contents
-This repository contains the main script hand_tracking and some helper scripts:
+This repository contains the main scripts hand_tracking and tracking_orientation.py with some helper scripts:
 - Hand_tracking: Actual script used to track the hand and move the robot.
+- tracking_orientation: Script to track movement and orientation, still needs a bit of work.
 - moveit_test: Helper script to check if moveit and connection to the robot section of the program actually works.
 - hand_to_coordinates_mediapipe: Helper script to check if the mediapipe section of the program actually works.
 
@@ -27,7 +28,7 @@ This package is used on ROS Noetic and makes use of Universal Robots drivers. Yo
 
 Download [Ubuntu 20.04.6 LTS (Focal Fossa)](https://releases.ubuntu.com/focal/) to be able to install RoS Noetic.
 
-Install [ROS Noteic](http://wiki.ros.org/noetic/Installation/Ubuntu) and then follow [Universal Robot drivers](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/tree/master) installation guide.
+Install [ROS Noteic](http://wiki.ros.org/noetic/Installation/Ubuntu) and then follow [ Robot drivers](https://github.com/Robots/_Robots_ROS_Driver/tree/master) installation guide.
 
 Create a RoS workspace by:
 ```
@@ -48,7 +49,7 @@ $ echo $ROS_PACKAGE_PATH
 /home/youruser/catkin_ws/src:/opt/ros/noetic/share
 ```
 
-You also need to install the [UR simulator](https://www.universal-robots.com/download/?filters[]=98759&query=). Ensure it is on the same network as your ROS machine. Follow the set-up tutorial on [UR Usage Example](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/usage_example.md) to install it and run the test_move script as outlined in the control the robot section.
+You also need to install the [UR simulator](https://www.-robots.com/download/?filters[]=98759&query=). Ensure it is on the same network as your ROS machine. Follow the set-up tutorial on [UR Usage Example](https://github.com/Robots/_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/usage_example.md) to install it and run the test_move script as outlined at control the robot section.
 
 There you will also see an example of [MoveIt](https://moveit.ros.org/), some parts of which will be used in the set-up, but don't worry right now!
 
@@ -88,14 +89,15 @@ shoulder_pan_joint:
 
 If you don't know your joint limits yet, you can figure them out once the program is running.
 
+Inside the directory joint_angle_files you can find some limits I used for my specific case, you can try them out if you consider it can be useful for you.
 
 ## Setting it up
 
 Now that the requirements are complete, we can start playing with it!
 
-First, start the UR robot and load the [urcap](https://github.com/UniversalRobots/Universal_Robots_ExternalControl_URCap/releases).
+First, start the UR robot and load the [urcap](https://github.com/Robots/_Robots_ExternalControl_URCap/releases).
 
-Next, you should calibrate the robot. Follow the [Universal Robot Calibration Guide](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_calibration/README.md) in order to calibrate.
+Next, you should calibrate the robot. Follow the [ Robot Calibration Guide](https://github.com/Robots/_Robots_ROS_Driver/blob/master/ur_calibration/README.md) in order to calibrate.
 Once it has been calibrated, you can either follow the next instruction by adding the calibration file or launch it via your new launch file with the calibration.
 
 The next step is to start two launch files on different terminal windows.
@@ -110,7 +112,7 @@ The first one is the launch file that connects to the robot, and the second one 
 Now that the launch files are running, you can start playing with this package's scripts. For example, the following gets the robot to imitate the hand movement:
 
 ```
-rosrun Universal_Robots_Depth_camera_control hand_tracking
+rosrun _Robots_Depth_camera_control hand_tracking
 ```
 
 If everything was done correctly, the robot should be following your every movement!
@@ -124,3 +126,10 @@ Next steps I'll be adding to this project:
 
 - Pick and Place using the depth camera.
 - Improve code quality of life.
+- Config file so there is no need to go inside the scripts to change information.
+
+## Recomendation
+For the joint angles configuration, make sure to first close the moveit_planning_execution.launch file so whenever it is relaunched it does so with the new values. Also, the has_position_limits: false input option inside joint_limits.yaml won't work, so I recommend commenting out that line along it's respective joint's limits.
+
+
+If there is any doubt, just ask, I can't promise to answer fast but I'll do my best to help.
