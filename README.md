@@ -117,6 +117,8 @@ rosrun _Robots_Depth_camera_control hand_tracking
 
 If everything was done correctly, the robot should be following your every movement!
 
+If you want to change the workspace limits, it is done with arguments when defining the robot class inside the scripts.
+
 *In case you are setting up your joint limits, you'll need to stop ur3_moveit_config before every change for them to be processed. Also, has_position_limits: false doesn't work and seems to bug the urcap on the simulator, so if you want to deactivate something just comment it out.
 
 
@@ -124,7 +126,7 @@ If everything was done correctly, the robot should be following your every movem
 
 Next steps I'll be adding to this project:
 
-- Pick and Place using the depth camera.
+- Pick and Place using the depth camera. (Unfortunately, I no longer have access to the camera, so I won't be able to do this.)
 - Improve code quality of life.
 - Config file so there is no need to go inside the scripts to change information.
 
