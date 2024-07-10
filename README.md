@@ -17,8 +17,8 @@ In order to do so, this package makes use of mediapipe to identify the hand and 
 
 ## Contents
 This repository contains the main scripts hand_tracking and tracking_orientation.py with some helper scripts:
-- Hand_tracking: Actual script used to track the hand and move the robot.
-- tracking_orientation: Script to track movement and orientation, still needs a bit of work.
+- [Hand_tracking](https://youtu.be/usjSbZUHQrM): Actual script used to track the hand and move the robot.
+- [tracking_orientation](https://youtu.be/mS1w9SVrdP4): Script to track movement and orientation, still needs a bit of work.
 - moveit_test: Helper script to check if moveit and connection to the robot section of the program actually works.
 - hand_to_coordinates_mediapipe: Helper script to check if the mediapipe section of the program actually works.
 
